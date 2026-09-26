@@ -1,0 +1,55 @@
+---
+description: Conventional Commits en español para mensajes de git
+alwaysApply: true
+---
+
+# Conventional Commits (español)
+
+Al crear un commit, usa [Conventional Commits](https://www.conventionalcommits.org/es/v1.0.0/) con **descripción en español**. El `type` y el `scope` van en inglés (estándar).
+
+Formato:
+
+```
+<type>[scope opcional]: <descripción en español>
+
+[cuerpo opcional: el porqué, no el qué]
+
+[footer opcional]
+```
+
+- Primera línea en **imperativo**, minúsculas, sin punto final, máx. ~72 caracteres.
+- Cuerpo (si hace falta) en 1–2 frases centradas en el **porqué**.
+- Un commit = un cambio coherente. No mezclar feat y fix no relacionados.
+
+## Types
+
+| Type | Uso |
+|------|-----|
+| `feat` | Funcionalidad nueva |
+| `fix` | Corrección de bug |
+| `docs` | Solo documentación |
+| `style` | Formato, sin cambio de lógica |
+| `refactor` | Cambio interno sin feat ni fix |
+| `perf` | Mejora de rendimiento |
+| `test` | Tests |
+| `build` | Composer, assets de build |
+| `ci` | GitHub Actions / pipelines |
+| `chore` | Mantenimiento (deps, config de repo) |
+| `revert` | Revertir un commit |
+
+Breaking change: `feat!: ...` o footer `BREAKING CHANGE: ...`.
+
+## Ejemplos
+
+```
+feat: añadir persistencia de mensajes del widget
+fix: respetar el middleware configurado en las rutas
+docs: documentar Conventional Commits en español
+chore(release): versión 0.1.0
+```
+
+```
+feat(filament): exponer hook opcional de panel
+
+Permite registrar el widget sin forzar un provider extra en apps Filament.
+```
