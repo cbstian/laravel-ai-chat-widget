@@ -7,6 +7,8 @@ use Cbstian\AiChat\Models\AiChatSession;
 use Cbstian\AiChat\Models\AiChatTurnLog;
 use Cbstian\AiChat\Tests\Fixtures\FakeChatAgent;
 use Cbstian\AiChat\Tests\Fixtures\User;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Streaming\Events\TextDelta;
 
 it('streams a fake agent reply and persists verbose turn logs', function () {
@@ -86,4 +88,25 @@ it('does not create sessions when persist is disabled', function () {
 
     expect(AiChatSession::query()->count())->toBe(0);
     expect(AiChatTurnLog::query()->count())->toBe(0);
+});
+
+it('does not query ai_chat_sessions when persist is disabled and there is no conversation', function () {
+    config(['ai-chat.persist' => false]);
+
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'nopersist-messages@example.test',
+    ]);
+
+    $queries = [];
+
+    DB::listen(function (QueryExecuted $query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
+
+    expect(app(ChatDriver::class)->messages($user, null))->toBe([]);
+
+    expect(collect($queries)->contains(
+        fn (string $sql): bool => str_contains($sql, 'ai_chat_sessions'),
+    ))->toBeFalse();
 });

@@ -1,14 +1,15 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "cbstian/laravel-ai-chat-widget",
-    "description": "Widget de chat IA flotante para Laravel 13 y Livewire 4 (Filament o Blade). UI, config visual y persistencia opcional; el agente y las tools viven en la app.",
+    "description": "Widget de chat IA flotante para Laravel y Livewire. UI, persistencia opcional y tools para leer Markdown; el agente de dominio se conecta con laravel/ai.",
     "keywords": [
         "laravel",
         "livewire",
         "ai",
         "chat",
         "widget",
-        "filament"
+        "filament",
+        "markdown"
     ],
     "homepage": "https://github.com/cbstian/laravel-ai-chat-widget",
     "license": "MIT",

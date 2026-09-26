@@ -38,9 +38,18 @@ Contratos, `AgentChatDriver`, Livewire `AiChatWidget`, modelos/migraciones, CSS,
 ## Pendientes
 
 - Tests Pest con fake gateway
-- Make stubs agent/tool
 - Piloto en datos.pazciudadana.local
 - Alinear voxlitycs a laravel/ai ^0.11
+
+## Integración para agentes (2026-09-26)
+
+- `docs/INTEGRATION.md` es el flujo que debe seguir un agente en la app anfitriona.
+- Boost: `resources/boost/guidelines/core.blade.php` y skill `ai-chat-widget`.
+- `ai-chat:install` genera `ChatAgent`, `ChatAgentFactory` y `ChatAccessGate`.
+- Tools del paquete: `ListMarkdownDocuments` y `ReadMarkdownDocument`.
+- `AI_CHAT_PERSIST=false` ya no consulta `ai_chat_sessions` al abrir el panel.
+- El hook de Filament incluye `@aiChatStyles`.
+- Markdown del welcome y de las respuestas escapa HTML crudo.
 
 ## Tests Pest + gateway fake (2026-09-18)
 

@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Cbstian\AiChat\Tools\ListMarkdownDocuments;
+use Cbstian\AiChat\Tools\ReadMarkdownDocument;
+use Laravel\Ai\Concerns\RemembersConversations;
+use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\Conversational;
+use Laravel\Ai\Contracts\HasTools;
+use Laravel\Ai\Promptable;
+use Stringable;
+
+class ChatAgent implements Agent, Conversational, HasTools
+{
+    use Promptable;
+    use RemembersConversations;
+
+    public function instructions(): Stringable|string
+    {
+        return <<<'TXT'
+Eres el asistente de esta aplicación. Responde en el idioma del usuario.
+
+Si la pregunta depende de documentación del proyecto, llama a ListMarkdownDocuments y después a ReadMarkdownDocument con una ruta de esa lista. No inventes el contenido de esos archivos.
+
+Las tools de dominio (datos, permisos, acciones) se añaden en tools(). No afirmes que consultaste un sistema si no llamaste a una tool.
+TXT;
+    }
+
+    public function tools(): iterable
+    {
+        return [
+            new ListMarkdownDocuments,
+            new ReadMarkdownDocument,
+        ];
+    }
+}

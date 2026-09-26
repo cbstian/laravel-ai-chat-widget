@@ -6,7 +6,16 @@ namespace Cbstian\AiChat\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string|null $agent_conversation_id
+ * @property array<string, mixed>|null $context
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
 class AiChatSession extends Model
 {
     protected $table = 'ai_chat_sessions';

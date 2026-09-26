@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Added
+- Tools `ListMarkdownDocuments` y `ReadMarkdownDocument` para que el LLM lea Markdown de directorios configurados.
+- `ai-chat:install` genera el agente, el factory y el gate de acceso en la app.
+- Guía `docs/INTEGRATION.md`, guideline y skill de Laravel Boost para agentes que integran el paquete.
+
+### Fixed
+- Con `AI_CHAT_PERSIST=false`, abrir el chat ya no consulta `ai_chat_sessions`.
+- El hook de Filament incluye `@aiChatStyles`.
+- El HTML crudo del welcome y de las respuestas se escapa al renderizar Markdown.
+- `ai-chat.agent`, `ai-chat.access` y `ai-chat.driver` tienen que implementar su contrato.
+
 ### Changed
 - Namespace PHP: `PazCiudadana\AiChat` → `Cbstian\AiChat`.
 

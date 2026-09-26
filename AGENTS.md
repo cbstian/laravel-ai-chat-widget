@@ -9,7 +9,7 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Add only the files and dependencies needed for the package behavior being implemented.
 - Prefer explicit Laravel package code over helper abstractions unless the extension point is real.
 - Keep tests focused on observable package behavior through public APIs, service provider wiring, commands, routes, published resources, and documentation promises.
-- Git commits use Conventional Commits with the description in Spanish (`feat: añadir …`, `fix: corregir …`). See `.cursor/rules/conventional-commits.mdc` and `.github/CONTRIBUTING.md`.
+- Consumer integration stays in `docs/INTEGRATION.md`, `resources/boost/guidelines/core.blade.php`, and `resources/boost/skills/ai-chat-widget/SKILL.md`. Keep those aligned with install, config, contracts, and the Markdown tools.
 - Git commits use Conventional Commits with the description in Spanish (`feat: añadir …`, `fix: corregir …`). See `.cursor/rules/conventional-commits.mdc` and `.github/CONTRIBUTING.md`.
 
 ## Quick Commands

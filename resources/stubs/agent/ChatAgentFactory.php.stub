@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Cbstian\AiChat\Contracts\ResolvesChatAgent;
+use Illuminate\Contracts\Auth\Authenticatable;
+
+class ChatAgentFactory implements ResolvesChatAgent
+{
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function make(?Authenticatable $user, array $context = []): object
+    {
+        // $user y $context llegan del widget:
+        // @livewire('ai-chat-widget', ['context' => ['area' => 'facturas']])
+        // Pásalos al agente o a tools de dominio cuando necesites acotar por usuario.
+        return new ChatAgent;
+    }
+}

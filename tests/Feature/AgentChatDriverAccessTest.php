@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Cbstian\AiChat\Contracts\ChatDriver;
 use Cbstian\AiChat\Contracts\ResolvesChatAccess;
+use Cbstian\AiChat\Contracts\ResolvesChatAgent;
 use Cbstian\AiChat\Tests\Fixtures\DenyAllChatAccess;
 use Cbstian\AiChat\Tests\Fixtures\User;
 use Illuminate\Validation\ValidationException;
@@ -53,6 +54,43 @@ it('rejects ask when access is denied', function () {
         [],
         fn () => null,
     ))->toThrow(ValidationException::class);
+});
+
+it('allows any authenticated user when access is not configured', function () {
+    config(['ai-chat.access' => null]);
+    app()->forgetInstance(ResolvesChatAccess::class);
+    app()->forgetInstance(ChatDriver::class);
+
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'open-access@example.test',
+    ]);
+
+    expect(app(ResolvesChatAccess::class))->toBeNull()
+        ->and(app(ChatDriver::class)->canAccess($user))->toBeTrue();
+});
+
+it('rejects an agent class that does not implement ResolvesChatAgent', function () {
+    config(['ai-chat.agent' => stdClass::class]);
+    app()->forgetInstance(ResolvesChatAgent::class);
+    app()->forgetInstance(ChatDriver::class);
+
+    expect(fn () => app(ChatDriver::class))->toThrow(RuntimeException::class);
+});
+
+it('rejects an access class that does not implement ResolvesChatAccess', function () {
+    config(['ai-chat.access' => stdClass::class]);
+    app()->forgetInstance(ResolvesChatAccess::class);
+    app()->forgetInstance(ChatDriver::class);
+
+    expect(fn () => app(ChatDriver::class))->toThrow(RuntimeException::class);
+});
+
+it('rejects a driver class that does not implement ChatDriver', function () {
+    config(['ai-chat.driver' => stdClass::class]);
+    app()->forgetInstance(ChatDriver::class);
+
+    expect(fn () => app(ChatDriver::class))->toThrow(RuntimeException::class);
 });
 
 it('rejects empty prompts', function () {

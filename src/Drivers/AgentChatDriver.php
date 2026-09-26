@@ -163,7 +163,7 @@ class AgentChatDriver implements ChatDriver
 
     public function messages(Authenticatable $user, ?string $conversationId, int $limit = 50): array
     {
-        if (blank($conversationId)) {
+        if (blank($conversationId) && config('ai-chat.persist', true)) {
             $session = AiChatSession::query()
                 ->where('user_id', $user->getAuthIdentifier())
                 ->latest('updated_at')

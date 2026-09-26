@@ -24,33 +24,57 @@ class AiChatServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/ai-chat.php', 'ai-chat');
 
-        $this->app->singleton(ResolvesChatAgent::class, function (Application $app) {
+        $this->app->singleton(ResolvesChatAgent::class, function (Application $app): ResolvesChatAgent {
             $class = config('ai-chat.agent');
 
             if (! is_string($class) || $class === '' || ! class_exists($class)) {
                 throw new RuntimeException(
-                    'Configura ai-chat.agent con una clase que implemente ResolvesChatAgent.',
+                    'Configura ai-chat.agent con una clase que implemente '.ResolvesChatAgent::class.'.',
                 );
             }
 
-            return $app->make($class);
+            $agent = $app->make($class);
+
+            if (! $agent instanceof ResolvesChatAgent) {
+                throw new RuntimeException(
+                    "La clase [{$class}] debe implementar ".ResolvesChatAgent::class.'.',
+                );
+            }
+
+            return $agent;
         });
 
-        $this->app->singleton(ResolvesChatAccess::class, function (Application $app) {
+        $this->app->singleton(ResolvesChatAccess::class, function (Application $app): ?ResolvesChatAccess {
             $class = config('ai-chat.access');
 
             if (! is_string($class) || $class === '' || ! class_exists($class)) {
                 return null;
             }
 
-            return $app->make($class);
+            $access = $app->make($class);
+
+            if (! $access instanceof ResolvesChatAccess) {
+                throw new RuntimeException(
+                    "La clase [{$class}] debe implementar ".ResolvesChatAccess::class.'.',
+                );
+            }
+
+            return $access;
         });
 
-        $this->app->singleton(ChatDriver::class, function (Application $app) {
+        $this->app->singleton(ChatDriver::class, function (Application $app): ChatDriver {
             $driver = config('ai-chat.driver');
 
             if (is_string($driver) && $driver !== '' && class_exists($driver)) {
-                return $app->make($driver);
+                $instance = $app->make($driver);
+
+                if (! $instance instanceof ChatDriver) {
+                    throw new RuntimeException(
+                        "La clase [{$driver}] debe implementar ".ChatDriver::class.'.',
+                    );
+                }
+
+                return $instance;
             }
 
             return new AgentChatDriver(
@@ -117,7 +141,7 @@ class AiChatServiceProvider extends ServiceProvider
 
         Filament::registerRenderHook(
             PanelsRenderHook::BODY_END,
-            fn (): string => Blade::render('@livewire(\'ai-chat-widget\')'),
+            fn (): string => Blade::render("@aiChatStyles\n@livewire('ai-chat-widget')"),
         );
     }
 }

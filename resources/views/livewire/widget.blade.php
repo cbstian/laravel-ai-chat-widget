@@ -61,7 +61,7 @@
                         </div>
                     @else
                         <div class="pc-ai-chat__bubble pc-ai-chat__bubble--assistant">
-                            {!! str($message['content'])->markdown() !!}
+                            {!! $this->renderMarkdown((string) $message['content']) !!}
                         </div>
                     @endif
                 @empty

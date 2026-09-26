@@ -1,0 +1,17 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Cbstian\AiChat\Contracts\ResolvesChatAccess;
+use Illuminate\Contracts\Auth\Authenticatable;
+
+class ChatAccessGate implements ResolvesChatAccess
+{
+    public function canAccess(?Authenticatable $user): bool
+    {
+        // El driver ya rechaza invitados. Este método solo filtra usuarios autenticados.
+        return $user !== null;
+    }
+}

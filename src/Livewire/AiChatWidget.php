@@ -165,7 +165,15 @@ class AiChatWidget extends Component
             ? File::get($path)
             : (string) config('ai-chat.welcome_markdown_inline', '');
 
-        return (string) str($markdown)->markdown();
+        return $this->renderMarkdown($markdown);
+    }
+
+    public function renderMarkdown(string $markdown): string
+    {
+        return (string) str($markdown)->markdown([
+            'html_input' => 'escape',
+            'allow_unsafe_links' => false,
+        ]);
     }
 
     public function render(): View

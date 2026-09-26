@@ -60,3 +60,20 @@ it('sends a message through the widget using the fake gateway', function () {
     expect(AiChatTurnLog::query()->count())->toBe(1);
     expect(AiChatTurnLog::query()->first()->succeeded)->toBeTrue();
 });
+
+it('escapes raw html in assistant messages', function () {
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'xss@example.test',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(AiChatWidget::class)
+        ->set('open', true)
+        ->set('messages', [
+            ['role' => 'assistant', 'content' => '<script>alert(1)</script>'],
+        ])
+        ->assertDontSee('<script>alert(1)</script>', false)
+        ->assertSee('<script>alert(1)</script>');
+});
