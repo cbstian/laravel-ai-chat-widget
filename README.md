@@ -35,7 +35,7 @@ Mientras tanto, desde VCS:
 
 ```bash
 composer config repositories.laravel-ai-chat-widget vcs https://github.com/cbstian/laravel-ai-chat-widget
-composer require cbstian/laravel-ai-chat-widget:dev-main
+composer require cbstian/laravel-ai-chat-widget:dev-master
 php artisan ai-chat:install
 php artisan migrate
 ```
