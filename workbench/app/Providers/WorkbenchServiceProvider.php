@@ -25,10 +25,15 @@ class WorkbenchServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $aiMigrations = dirname(__DIR__, 3).'/vendor/laravel/ai/database/migrations';
+        $packageRoot = dirname(__DIR__, 3);
 
-        if (is_dir($aiMigrations)) {
-            $this->loadMigrationsFrom($aiMigrations);
+        foreach ([
+            $packageRoot.'/vendor/laravel/ai/database/migrations',
+            $packageRoot.'/database/migrations',
+        ] as $path) {
+            if (is_dir($path) && ! $this->migrationsAlreadyPublished($path)) {
+                $this->loadMigrationsFrom($path);
+            }
         }
 
         Route::pushMiddlewareToGroup('web', AuthenticateDemoUser::class);
@@ -48,5 +53,26 @@ class WorkbenchServiceProvider extends ServiceProvider
             'ai-chat.title' => 'Asistente IA',
             'ai-chat.subtitle' => 'Prueba local de Workbench',
         ]);
+    }
+
+    protected function migrationsAlreadyPublished(string $path): bool
+    {
+        if (! str_contains($path, '/database/migrations') || str_contains($path, '/vendor/laravel/ai/')) {
+            return false;
+        }
+
+        $published = database_path('migrations');
+
+        if (! is_dir($published)) {
+            return false;
+        }
+
+        foreach (scandir($published) ?: [] as $file) {
+            if (str_contains($file, 'create_ai_chat_sessions_table')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

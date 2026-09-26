@@ -63,7 +63,6 @@ class AiChatServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'ai-chat');
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         if (class_exists(Livewire::class)) {
             Livewire::component('ai-chat-widget', AiChatWidget::class);
