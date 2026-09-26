@@ -174,6 +174,7 @@ class AiChatWidget extends Component
             'title' => (string) config('ai-chat.title'),
             'subtitle' => (string) config('ai-chat.subtitle'),
             'colors' => (array) config('ai-chat.colors', []),
+            'userName' => $this->userDisplayName(),
             'accessible' => $this->canAccess(),
         ]);
     }
@@ -181,6 +182,13 @@ class AiChatWidget extends Component
     protected function canAccess(): bool
     {
         return app(ChatDriver::class)->canAccess(Auth::user());
+    }
+
+    protected function userDisplayName(): string
+    {
+        $name = data_get(Auth::user(), 'name');
+
+        return is_string($name) ? trim($name) : '';
     }
 
     protected function toolLabel(string $name): string

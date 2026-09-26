@@ -19,7 +19,7 @@ class AuthenticateDemoUser
     public function handle(Request $request, Closure $next): Response
     {
         DemoChatAgent::fake(function (string $prompt): string {
-            return "Recibí: **{$prompt}**\n\nEste es el agente local de Workbench. El widget, el streaming y la persistencia funcionan sin un proveedor real.";
+            return 'Este es el agente local de Workbench. El widget, el streaming y la persistencia funcionan sin un proveedor real.';
         });
 
         if (! Auth::check()) {

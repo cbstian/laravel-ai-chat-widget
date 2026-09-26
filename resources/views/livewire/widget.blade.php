@@ -5,6 +5,7 @@
     style="
         --pc-ai-primary: {{ $colors['primary'] ?? '#4A4D46' }};
         --pc-ai-header: {{ $colors['header'] ?? ($colors['primary'] ?? '#4A4D46') }};
+        --pc-ai-header-text: {{ $colors['header_text'] ?? '#ffffff' }};
         --pc-ai-user-bubble: {{ $colors['user_bubble'] ?? ($colors['primary'] ?? '#4A4D46') }};
         --pc-ai-assistant-bubble: {{ $colors['assistant_bubble'] ?? '#ffffff' }};
         --pc-ai-fab: {{ $colors['fab'] ?? ($colors['primary'] ?? '#4A4D46') }};
@@ -23,7 +24,15 @@
                 <div class="pc-ai-chat__header-actions">
                     <button type="button" class="pc-ai-chat__icon-btn" wire:click="newConversation" title="Nueva conversación">＋</button>
                     <button type="button" class="pc-ai-chat__icon-btn" wire:click="toggleExpanded" title="{{ $expanded ? 'Compactar' : 'Expandir' }}">
-                        {{ $expanded ? '⇩' : '⇧' }}
+                        @if ($expanded)
+                            <svg class="pc-ai-chat__glyph" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
+                            </svg>
+                        @else
+                            <svg class="pc-ai-chat__glyph" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+                            </svg>
+                        @endif
                     </button>
                     <button type="button" class="pc-ai-chat__icon-btn" wire:click="toggle" title="Cerrar">✕</button>
                 </div>
@@ -43,17 +52,18 @@
                 "
             >
                 @forelse ($messages as $message)
-                    <div @class([
-                        'pc-ai-chat__bubble',
-                        'pc-ai-chat__bubble--user' => $message['role'] === 'user',
-                        'pc-ai-chat__bubble--assistant' => $message['role'] !== 'user',
-                    ])>
-                        @if ($message['role'] === 'user')
-                            {{ $message['content'] }}
-                        @else
+                    @if ($message['role'] === 'user')
+                        <div class="pc-ai-chat__entry pc-ai-chat__entry--user">
+                            @if ($userName !== '')
+                                <span class="pc-ai-chat__author">{{ $userName }}</span>
+                            @endif
+                            <div class="pc-ai-chat__bubble pc-ai-chat__bubble--user">{{ $message['content'] }}</div>
+                        </div>
+                    @else
+                        <div class="pc-ai-chat__bubble pc-ai-chat__bubble--assistant">
                             {!! str($message['content'])->markdown() !!}
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 @empty
                     @if ($pendingQuestion === '')
                         <div class="pc-ai-chat__bubble pc-ai-chat__bubble--assistant">
@@ -63,7 +73,12 @@
                 @endforelse
 
                 @if ($pendingQuestion !== '')
-                    <div class="pc-ai-chat__bubble pc-ai-chat__bubble--user">{{ $pendingQuestion }}</div>
+                    <div class="pc-ai-chat__entry pc-ai-chat__entry--user">
+                        @if ($userName !== '')
+                            <span class="pc-ai-chat__author">{{ $userName }}</span>
+                        @endif
+                        <div class="pc-ai-chat__bubble pc-ai-chat__bubble--user">{{ $pendingQuestion }}</div>
+                    </div>
                     <div class="pc-ai-chat__bubble pc-ai-chat__bubble--assistant">
                         <span wire:stream="streamingAnswer">{{ $streamingAnswer !== '' ? $streamingAnswer : '…' }}</span>
                     </div>

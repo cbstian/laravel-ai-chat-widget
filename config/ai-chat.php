@@ -23,6 +23,7 @@ MD,
     'colors' => [
         'primary' => '#4A4D46',
         'header' => '#4A4D46',
+        'header_text' => '#ffffff',
         'user_bubble' => '#4A4D46',
         'assistant_bubble' => '#ffffff',
         'fab' => '#4A4D46',
