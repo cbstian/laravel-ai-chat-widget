@@ -1,3 +1,4 @@
+<div>
 @if ($accessible)
 <div
     class="pc-ai-chat"
@@ -87,3 +88,4 @@
     </button>
 </div>
 @endif
+</div>

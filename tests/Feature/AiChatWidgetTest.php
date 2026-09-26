@@ -8,6 +8,12 @@ use Cbstian\AiChat\Tests\Fixtures\FakeChatAgent;
 use Cbstian\AiChat\Tests\Fixtures\User;
 use Livewire\Livewire;
 
+it('renders an empty root for a guest', function () {
+    Livewire::test(AiChatWidget::class)
+        ->assertOk()
+        ->assertDontSee('Asistente IA', false);
+});
+
 it('renders the floating widget for an authenticated user', function () {
     $user = User::query()->create([
         'name' => 'Seba',
