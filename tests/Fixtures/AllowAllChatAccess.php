@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Cbstian\AiChat\Tests\Fixtures;
 
-use Illuminate\Contracts\Auth\Authenticatable;
 use Cbstian\AiChat\Contracts\ResolvesChatAccess;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 class AllowAllChatAccess implements ResolvesChatAccess
 {

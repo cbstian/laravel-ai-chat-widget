@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Livewire\Livewire;
 use Cbstian\AiChat\Livewire\AiChatWidget;
 use Cbstian\AiChat\Models\AiChatTurnLog;
 use Cbstian\AiChat\Tests\Fixtures\FakeChatAgent;
 use Cbstian\AiChat\Tests\Fixtures\User;
+use Livewire\Livewire;
 
 it('renders the floating widget for an authenticated user', function () {
     $user = User::query()->create([

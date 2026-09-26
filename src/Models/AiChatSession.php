@@ -24,6 +24,9 @@ class AiChatSession extends Model
         ];
     }
 
+    /**
+     * @return HasMany<AiChatTurnLog, $this>
+     */
     public function turnLogs(): HasMany
     {
         return $this->hasMany(AiChatTurnLog::class);

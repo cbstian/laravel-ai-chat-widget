@@ -33,11 +33,17 @@ class AiChatTurnLog extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<AiChatSession, $this>
+     */
     public function session(): BelongsTo
     {
         return $this->belongsTo(AiChatSession::class, 'ai_chat_session_id');
     }
 
+    /**
+     * @return HasMany<AiChatToolCallLog, $this>
+     */
     public function toolCallLogs(): HasMany
     {
         return $this->hasMany(AiChatToolCallLog::class);

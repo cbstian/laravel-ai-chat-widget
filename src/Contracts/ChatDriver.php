@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Cbstian\AiChat\Contracts;
 
-use Illuminate\Contracts\Auth\Authenticatable;
 use Cbstian\AiChat\Dto\ChatTurnResult;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 interface ChatDriver
 {

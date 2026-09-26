@@ -20,11 +20,17 @@ class AiChatToolCallLog extends Model
         'duration_ms',
     ];
 
+    /**
+     * @return BelongsTo<AiChatTurnLog, $this>
+     */
     public function turnLog(): BelongsTo
     {
         return $this->belongsTo(AiChatTurnLog::class, 'ai_chat_turn_log_id');
     }
 
+    /**
+     * @return BelongsTo<AiChatSession, $this>
+     */
     public function session(): BelongsTo
     {
         return $this->belongsTo(AiChatSession::class, 'ai_chat_session_id');

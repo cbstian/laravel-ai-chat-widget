@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Cbstian\AiChat\Livewire;
 
+use Cbstian\AiChat\Contracts\ChatDriver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -11,7 +12,6 @@ use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\ToolCall;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
-use Cbstian\AiChat\Contracts\ChatDriver;
 use Throwable;
 
 class AiChatWidget extends Component
@@ -37,6 +37,9 @@ class AiChatWidget extends Component
     #[Locked]
     public array $context = [];
 
+    /**
+     * @param  array<string, mixed>  $context
+     */
     public function mount(array $context = []): void
     {
         $this->context = $context;

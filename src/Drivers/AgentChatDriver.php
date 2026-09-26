@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace Cbstian\AiChat\Drivers;
 
+use Cbstian\AiChat\Contracts\ChatDriver;
+use Cbstian\AiChat\Contracts\ResolvesChatAccess;
+use Cbstian\AiChat\Contracts\ResolvesChatAgent;
+use Cbstian\AiChat\Dto\ChatTurnResult;
+use Cbstian\AiChat\Models\AiChatSession;
+use Cbstian\AiChat\Models\AiChatToolCallLog;
+use Cbstian\AiChat\Models\AiChatTurnLog;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -12,13 +19,6 @@ use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Messages\MessageRole;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\ToolCall;
-use Cbstian\AiChat\Contracts\ChatDriver;
-use Cbstian\AiChat\Contracts\ResolvesChatAccess;
-use Cbstian\AiChat\Contracts\ResolvesChatAgent;
-use Cbstian\AiChat\Dto\ChatTurnResult;
-use Cbstian\AiChat\Models\AiChatSession;
-use Cbstian\AiChat\Models\AiChatToolCallLog;
-use Cbstian\AiChat\Models\AiChatTurnLog;
 use RuntimeException;
 use Throwable;
 
@@ -85,7 +85,7 @@ class AgentChatDriver implements ChatDriver
         try {
             $agent = $this->agents->make($user, $context);
 
-            if (! is_object($agent) || ! method_exists($agent, 'stream')) {
+            if (! method_exists($agent, 'stream')) {
                 throw new RuntimeException('El agente resuelto debe exponer stream().');
             }
 
@@ -176,7 +176,7 @@ class AgentChatDriver implements ChatDriver
             return [];
         }
 
-        return app(ConversationStore::class)
+        return array_values(app(ConversationStore::class)
             ->getLatestConversationMessages($conversationId, $limit)
             ->filter(fn (Message $message): bool => in_array($message->role, [MessageRole::User, MessageRole::Assistant], true)
                 && filled($message->content))
@@ -184,8 +184,7 @@ class AgentChatDriver implements ChatDriver
                 'role' => $message->role->value,
                 'content' => (string) $message->content,
             ])
-            ->values()
-            ->all();
+            ->all());
     }
 
     public function startNew(Authenticatable $user, array $context = []): ?string

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Laravel\Ai\Streaming\Events\TextDelta;
 use Cbstian\AiChat\Contracts\ChatDriver;
 use Cbstian\AiChat\Models\AiChatSession;
 use Cbstian\AiChat\Models\AiChatTurnLog;
 use Cbstian\AiChat\Tests\Fixtures\FakeChatAgent;
 use Cbstian\AiChat\Tests\Fixtures\User;
+use Laravel\Ai\Streaming\Events\TextDelta;
 
 it('streams a fake agent reply and persists verbose turn logs', function () {
     FakeChatAgent::fake([

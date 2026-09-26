@@ -1,7 +1,7 @@
 laravel: '@testbench'
 
 providers:
-  # - Workbench\App\Providers\WorkbenchServiceProvider
+  - Cbstian\AiChat\AiChatServiceProvider
 
 migrations:
   - workbench/database/migrations

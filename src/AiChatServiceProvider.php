@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Cbstian\AiChat;
 
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\ServiceProvider;
-use Livewire\Livewire;
 use Cbstian\AiChat\Console\Commands\InstallCommand;
 use Cbstian\AiChat\Contracts\ChatDriver;
 use Cbstian\AiChat\Contracts\ResolvesChatAccess;
 use Cbstian\AiChat\Contracts\ResolvesChatAgent;
 use Cbstian\AiChat\Drivers\AgentChatDriver;
 use Cbstian\AiChat\Livewire\AiChatWidget;
+use Filament\Facades\Filament;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 use RuntimeException;
 
 class AiChatServiceProvider extends ServiceProvider
@@ -21,19 +24,19 @@ class AiChatServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/ai-chat.php', 'ai-chat');
 
-        $this->app->singleton(ResolvesChatAgent::class, function ($app) {
+        $this->app->singleton(ResolvesChatAgent::class, function (Application $app) {
             $class = config('ai-chat.agent');
 
             if (! is_string($class) || $class === '' || ! class_exists($class)) {
                 throw new RuntimeException(
-                    'Configura ai-chat.agent con una clase que implemente ResolvesChatAgent.'
+                    'Configura ai-chat.agent con una clase que implemente ResolvesChatAgent.',
                 );
             }
 
             return $app->make($class);
         });
 
-        $this->app->singleton(ResolvesChatAccess::class, function ($app) {
+        $this->app->singleton(ResolvesChatAccess::class, function (Application $app) {
             $class = config('ai-chat.access');
 
             if (! is_string($class) || $class === '' || ! class_exists($class)) {
@@ -43,7 +46,7 @@ class AiChatServiceProvider extends ServiceProvider
             return $app->make($class);
         });
 
-        $this->app->singleton(ChatDriver::class, function ($app) {
+        $this->app->singleton(ChatDriver::class, function (Application $app) {
             $driver = config('ai-chat.driver');
 
             if (is_string($driver) && $driver !== '' && class_exists($driver)) {
@@ -105,16 +108,16 @@ class AiChatServiceProvider extends ServiceProvider
             return;
         }
 
-        if (! class_exists(\Filament\Facades\Filament::class)) {
+        if (! class_exists(Filament::class)) {
             return;
         }
 
-        if (! class_exists(\Filament\View\PanelsRenderHook::class)) {
+        if (! class_exists(PanelsRenderHook::class)) {
             return;
         }
 
-        \Filament\Facades\Filament::registerRenderHook(
-            \Filament\View\PanelsRenderHook::BODY_END,
+        Filament::registerRenderHook(
+            PanelsRenderHook::BODY_END,
             fn (): string => Blade::render('@livewire(\'ai-chat-widget\')'),
         );
     }

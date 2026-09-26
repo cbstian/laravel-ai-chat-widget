@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Cbstian\AiChat\Tests;
 
+use Cbstian\AiChat\AiChatServiceProvider;
+use Cbstian\AiChat\Tests\Fixtures\AllowAllChatAccess;
+use Cbstian\AiChat\Tests\Fixtures\FakeChatAgentFactory;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Ai\AiServiceProvider;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Cbstian\AiChat\AiChatServiceProvider;
-use Cbstian\AiChat\Tests\Fixtures\AllowAllChatAccess;
-use Cbstian\AiChat\Tests\Fixtures\FakeChatAgentFactory;
 
 abstract class TestCase extends Orchestra
 {

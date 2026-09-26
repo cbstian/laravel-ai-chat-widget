@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use Illuminate\Validation\ValidationException;
 use Cbstian\AiChat\Contracts\ChatDriver;
+use Cbstian\AiChat\Contracts\ResolvesChatAccess;
 use Cbstian\AiChat\Tests\Fixtures\DenyAllChatAccess;
 use Cbstian\AiChat\Tests\Fixtures\User;
+use Illuminate\Validation\ValidationException;
 
 it('denies access when the package is disabled', function () {
     config(['ai-chat.enabled' => false]);
@@ -24,7 +25,7 @@ it('denies access for guests', function () {
 
 it('denies access when ResolvesChatAccess returns false', function () {
     config(['ai-chat.access' => DenyAllChatAccess::class]);
-    app()->forgetInstance(\Cbstian\AiChat\Contracts\ResolvesChatAccess::class);
+    app()->forgetInstance(ResolvesChatAccess::class);
     app()->forgetInstance(ChatDriver::class);
 
     $user = User::query()->create([
@@ -37,7 +38,7 @@ it('denies access when ResolvesChatAccess returns false', function () {
 
 it('rejects ask when access is denied', function () {
     config(['ai-chat.access' => DenyAllChatAccess::class]);
-    app()->forgetInstance(\Cbstian\AiChat\Contracts\ResolvesChatAccess::class);
+    app()->forgetInstance(ResolvesChatAccess::class);
     app()->forgetInstance(ChatDriver::class);
 
     $user = User::query()->create([

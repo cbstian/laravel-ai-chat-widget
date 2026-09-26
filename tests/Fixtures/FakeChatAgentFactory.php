@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Cbstian\AiChat\Tests\Fixtures;
 
-use Illuminate\Contracts\Auth\Authenticatable;
 use Cbstian\AiChat\Contracts\ResolvesChatAgent;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 class FakeChatAgentFactory implements ResolvesChatAgent
 {
