@@ -14,7 +14,7 @@ php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
 php artisan migrate
 ```
 
-`ai-chat:install` publica config, migraciones `ai_chat_*`, `resources/ai/chat/welcome.md` y genera `app/Ai/ChatAgent.php`, `ChatAgentFactory.php` y `ChatAccessGate.php` (no pisa clases existentes; `--force` sí). No edita `.env`.
+`ai-chat:install` publica config, migraciones `ai_chat_*`, `resources/ai/chat/welcome.md` y genera `app/Ai/ChatAgent.php`, `ChatAgentFactory.php` y `ChatAccessGate.php` (no pisa clases existentes; `--force` sí). No edita `.env`. Requiere `laravel/ai` ^1.0. Si la app ya migró 0.x, corre el backfill de `steps` y `status` antes de desplegar.
 
 ### Obligatorio en .env
 

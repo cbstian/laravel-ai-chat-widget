@@ -21,7 +21,7 @@ Para instalarlo en otra app, un agente debe seguir [docs/INTEGRATION.md](docs/IN
 - PHP 8.3+
 - Laravel 12 o 13
 - Livewire 4
-- [`laravel/ai`](https://github.com/laravel/ai) `^0.11`
+- [`laravel/ai`](https://github.com/laravel/ai) `^1.0`
 
 ## Instalación
 

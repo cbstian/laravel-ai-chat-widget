@@ -38,7 +38,7 @@ No está en Packagist todavía. Hasta entonces, el `composer.json` de la app nec
 - PHP 8.3+
 - Laravel 12 o 13
 - Livewire 4
-- `laravel/ai` ^0.11 (dependencia del paquete; igual hay que publicar su config y migrar)
+- `laravel/ai` ^1.0 (dependencia del paquete; igual hay que publicar su config y migrar). Si la app ya tenía las tablas de 0.x, corre el backfill de [UPGRADE.md](https://github.com/laravel/ai/blob/1.x/UPGRADE.md) (`steps` y `status`) antes de desplegar. Una instalación nueva publica el esquema 1.0 al hacer `vendor:publish` del provider de `laravel/ai`.
 - Usuario autenticado con **id numérico**. Invitados no entran. Un `user_id` UUID rompe `ai_chat_sessions` y también `agent_conversations` de `laravel/ai` (`participant_id` es entero)
 
 ## Instalación
@@ -205,7 +205,7 @@ El HTML del welcome y de las respuestas pasa por Markdown con el HTML crudo esca
 
 Hay dos capas:
 
-1. **`laravel/ai`**: `agent_conversations` y `agent_conversation_messages`. Es el historial que el widget vuelve a pintar. Hace falta aunque `AI_CHAT_PERSIST=false`.
+1. **`laravel/ai`**: `agent_conversations` y `agent_conversation_messages`. Es el historial que el widget vuelve a pintar. Hace falta aunque `AI_CHAT_PERSIST=false`. Solo entran turnos con `status = completed`; un turno `failed` o `paused` no se muestra. `prompt_tokens` y `completion_tokens` de `ai_chat_turn_logs` copian `inputTokens` y `outputTokens` (totales del provider, caché y reasoning incluidos).
 2. **Este paquete**, si `AI_CHAT_PERSIST=true`:
    - `ai_chat_sessions` (`user_id` entero, `agent_conversation_id`, `context` JSON)
    - `ai_chat_turn_logs` (provider, modelo, tokens, duración, longitudes, éxito, error)

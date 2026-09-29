@@ -9,6 +9,9 @@ use Cbstian\AiChat\Tests\Fixtures\FakeChatAgent;
 use Cbstian\AiChat\Tests\Fixtures\User;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Laravel\Ai\Enums\MessageStatus;
+use Laravel\Ai\Models\ConversationMessage;
 use Laravel\Ai\Streaming\Events\TextDelta;
 
 it('streams a fake agent reply and persists verbose turn logs', function () {
@@ -37,7 +40,28 @@ it('streams a fake agent reply and persists verbose turn logs', function () {
         ->and($result->text)->toBe('Respuesta simulada del asistente.')
         ->and($result->provider)->toBe('openai')
         ->and($result->model)->toBe('gpt-4o-mini')
-        ->and($result->toolCallCount)->toBe(0);
+        ->and($result->toolCallCount)->toBe(0)
+        ->and($result->promptTokens)->toBe(0)
+        ->and($result->completionTokens)->toBe(0)
+        ->and($result->conversationId)->not->toBeNull();
+
+    ConversationMessage::query()->create([
+        'id' => (string) Str::uuid7(),
+        'conversation_id' => $result->conversationId,
+        'agent' => FakeChatAgent::class,
+        'role' => 'assistant',
+        'content' => 'Este turno falló.',
+        'attachments' => [],
+        'steps' => [],
+        'usage' => [],
+        'meta' => ['error' => 'boom'],
+        'status' => MessageStatus::Failed,
+    ]);
+
+    expect(app(ChatDriver::class)->messages($user, $result->conversationId))->toBe([
+        ['role' => 'user', 'content' => '¿Cómo estás?'],
+        ['role' => 'assistant', 'content' => 'Respuesta simulada del asistente.'],
+    ]);
 
     expect(collect($events)->contains(fn ($e) => $e instanceof TextDelta))->toBeTrue();
 

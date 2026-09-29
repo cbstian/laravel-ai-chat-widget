@@ -34,6 +34,7 @@ class InstallCommand extends Command
         $this->line('   php artisan vendor:publish --provider="Laravel\\Ai\\AiServiceProvider" --tag=ai-config');
         $this->line('   php artisan vendor:publish --provider="Laravel\\Ai\\AiServiceProvider"');
         $this->line('   php artisan migrate');
+        $this->line('   Si la app ya migró laravel/ai 0.x, corre antes el backfill a steps/status de su guía de upgrade a 1.0.');
         $this->line('2. Añade en .env (este comando no modifica .env):');
         $this->line('   AI_CHAT_AGENT='.$namespace.'\\ChatAgentFactory');
         $this->line('   AI_CHAT_ACCESS='.$namespace.'\\ChatAccessGate');

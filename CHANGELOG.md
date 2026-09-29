@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- Requiere `laravel/ai` ^1.0. Los logs de tokens leen `inputTokens` y `outputTokens`. El historial del widget solo muestra turnos `completed`.
+
 ### Added
 - Tools `ListMarkdownDocuments` y `ReadMarkdownDocument` para que el LLM lea Markdown de directorios configurados.
 - `ai-chat:install` genera el agente, el factory y el gate de acceso en la app.

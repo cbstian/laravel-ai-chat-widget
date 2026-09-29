@@ -49,7 +49,7 @@ Composer consume el tag **sin** la `v` en la constraint (`^0.1`, `^1.0`), aunque
 | PHP | `^8.3` |
 | Laravel (illuminate/*) | `^12 || ^13` |
 | Livewire | `^4.0` |
-| laravel/ai | `^0.11` |
+| laravel/ai | `^1.0` |
 
 Subir el mínimo de PHP/Laravel de forma incompatible → **MAJOR** (o MINOR en `0.x` con nota clara).
 

@@ -14,9 +14,9 @@ use Cbstian\AiChat\Models\AiChatTurnLog;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
-use Laravel\Ai\Contracts\ConversationStore;
-use Laravel\Ai\Messages\Message;
+use Laravel\Ai\Enums\MessageStatus;
 use Laravel\Ai\Messages\MessageRole;
+use Laravel\Ai\Models\ConversationMessage;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\ToolCall;
 use RuntimeException;
@@ -125,13 +125,17 @@ class AgentChatDriver implements ChatDriver
 
             $session?->touch();
 
-            $usage = $stream->usage ?? null;
+            if (is_string($stream->text)) {
+                $text = $stream->text;
+            }
+
+            $usage = $stream->usage;
 
             $result = new ChatTurnResult(
                 conversationId: $newConversationId,
                 text: $text,
-                promptTokens: (int) ($usage->promptTokens ?? 0),
-                completionTokens: (int) ($usage->completionTokens ?? 0),
+                promptTokens: $usage->inputTokens,
+                completionTokens: $usage->outputTokens,
                 toolCallCount: $toolCalls,
                 durationMs: (int) round((microtime(true) - $started) * 1000),
                 succeeded: true,
@@ -172,16 +176,29 @@ class AgentChatDriver implements ChatDriver
             $conversationId = $session?->agent_conversation_id;
         }
 
-        if (blank($conversationId) || ! interface_exists(ConversationStore::class)) {
+        if (blank($conversationId)) {
             return [];
         }
 
-        return array_values(app(ConversationStore::class)
-            ->getLatestConversationMessages($conversationId, $limit)
-            ->filter(fn (Message $message): bool => in_array($message->role, [MessageRole::User, MessageRole::Assistant], true)
-                && filled($message->content))
-            ->map(fn (Message $message): array => [
-                'role' => $message->role->value,
+        return $this->completedMessages($conversationId, $limit);
+    }
+
+    /**
+     * @return list<array{role: string, content: string}>
+     */
+    protected function completedMessages(string $conversationId, int $limit): array
+    {
+        return array_values(ConversationMessage::query()
+            ->where('conversation_id', $conversationId)
+            ->whereIn('role', [MessageRole::User->value, MessageRole::Assistant->value])
+            ->where('status', MessageStatus::Completed)
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->reverse()
+            ->filter(fn (ConversationMessage $message): bool => filled($message->content))
+            ->map(fn (ConversationMessage $message): array => [
+                'role' => (string) $message->role,
                 'content' => (string) $message->content,
             ])
             ->all());

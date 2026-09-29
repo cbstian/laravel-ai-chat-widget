@@ -44,7 +44,7 @@ php artisan migrate
 
 El install genera `app/Ai/ChatAgent.php`, `ChatAgentFactory.php` y `ChatAccessGate.php` con el namespace raíz de la app. No los pisa si ya existen. No escribe `.env`.
 
-Sin las migraciones de `laravel/ai` (`agent_conversations`) el panel no recupera el historial.
+Sin las migraciones de `laravel/ai` (`agent_conversations`) el panel no recupera el historial. El paquete requiere `laravel/ai` ^1.0. Si la app ya migró 0.x, corre el backfill de `steps` y `status` de su guía de upgrade antes de desplegar.
 
 ## Configurar
 

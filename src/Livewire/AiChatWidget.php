@@ -8,6 +8,7 @@ use Cbstian\AiChat\Contracts\ChatDriver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use Laravel\Ai\Streaming\Events\StreamStart;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\ToolCall;
 use Livewire\Attributes\Locked;
@@ -117,6 +118,10 @@ class AiChatWidget extends Component
                         $label = $this->toolLabel($event->toolCall->name);
                         $this->stream(to: 'streamingAnswer', content: e($label), replace: true);
                         $startedText = false;
+                    }
+
+                    if ($event instanceof StreamStart && $startedText) {
+                        $this->stream(to: 'streamingAnswer', content: e("\n\n"), replace: false);
                     }
 
                     if ($event instanceof TextDelta) {
