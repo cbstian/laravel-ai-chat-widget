@@ -30,7 +30,7 @@ Sigue `docs/INTEGRATION.md`. Las reglas de abajo son las que más se saltan.
 - Directiva: `@aiChatStyles`
 - Contratos de la app: `ResolvesChatAgent`, `ResolvesChatAccess`
 
-Si no está en Packagist, añade el repositorio VCS `https://github.com/cbstian/laravel-ai-chat-widget` y requiere `dev-master`, o un repositorio `path` local.
+Si no está en Packagist, añade el repositorio VCS `https://github.com/cbstian/laravel-ai-chat-widget` y requiere `dev-master`, o un repositorio `path` local. Para traer commits nuevos de VCS: `composer update cbstian/laravel-ai-chat-widget` (si no baja el `master` actual, `composer clear-cache` y `--prefer-source`). Con `path`, `git pull` en el clone. Ver README «Actualizar (VCS)».
 
 ## Instalar
 

@@ -57,6 +57,34 @@ php artisan vendor:publish --provider="Laravel\Ai\AiServiceProvider"
 php artisan migrate
 ```
 
+### Actualizar (VCS)
+
+`dev-master` queda fijado a un commit en `composer.lock`. Un `composer install` no trae commits nuevos. En la app:
+
+```bash
+composer update cbstian/laravel-ai-chat-widget
+```
+
+Si Composer reutiliza el clone en caché y no baja el `master` actual:
+
+```bash
+rm -rf vendor/cbstian/laravel-ai-chat-widget
+composer clear-cache
+composer update cbstian/laravel-ai-chat-widget --prefer-source
+```
+
+Si el paquete publicó migraciones o assets nuevos:
+
+```bash
+php artisan vendor:publish --tag=ai-chat-migrations
+php artisan vendor:publish --tag=ai-chat-assets --force
+php artisan migrate
+```
+
+No uses `ai-chat:install --force` salvo que quieras reemplazar `app/Ai` y el resto de stubs publicados.
+
+Con un repositorio `path`, Composer enlaza el directorio: actualiza con `git pull` (u otro checkout) en el clone del paquete; no hace falta `composer update` para el código fuente.
+
 ## Configuración mínima
 
 `ai-chat:install` crea `app/Ai/ChatAgent.php`, `ChatAgentFactory.php` y `ChatAccessGate.php`, y publica `resources/ai/chat/welcome.md`. No modifica `.env`. La tabla completa de claves está en [docs/INTEGRATION.md](docs/INTEGRATION.md) y comentada en `config/ai-chat.php`.

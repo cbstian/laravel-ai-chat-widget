@@ -60,6 +60,18 @@ composer config repositories.laravel-ai-chat-widget path ../laravel-ai-chat
 composer require cbstian/laravel-ai-chat-widget:@dev
 ```
 
+### Actualizar (VCS)
+
+`composer install` no mueve `dev-master`. En la app:
+
+```bash
+composer update cbstian/laravel-ai-chat-widget
+```
+
+Si el commit no cambia, borra `vendor/cbstian/laravel-ai-chat-widget`, corre `composer clear-cache` y vuelve a actualizar con `--prefer-source`. Publica de nuevo migraciones/assets si el paquete los cambió; no uses `ai-chat:install --force` si no quieres pisar `app/Ai`. Con `path`, `git pull` en el clone basta.
+
+Detalle en el [README](../README.md#actualizar-vcs).
+
 `ai-chat:install` publica:
 
 | Tag | Destino |
