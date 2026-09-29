@@ -61,6 +61,55 @@ it('sends a message through the widget using the fake gateway', function () {
     expect(AiChatTurnLog::query()->first()->succeeded)->toBeTrue();
 });
 
+it('ships markdown table styles that stay visible inside the panel', function () {
+    $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/ai-chat.css');
+
+    expect($css)
+        ->toContain('.pc-ai-chat__table')
+        ->toContain('overflow-x: auto')
+        ->toContain('border-collapse: collapse')
+        ->toContain('display: table-cell');
+});
+
+it('renders markdown tables inside a scrollable wrapper', function () {
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'table@example.test',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(AiChatWidget::class)
+        ->set('open', true)
+        ->set('messages', [
+            ['role' => 'assistant', 'content' => <<<'MD'
+| Nombre | Estado |
+| --- | --- |
+| Ana | Activo |
+MD],
+        ])
+        ->assertSee('<div class="pc-ai-chat__table"><table>', false)
+        ->assertSee('Ana')
+        ->assertSee('Activo');
+});
+
+it('escapes raw html tables in assistant messages', function () {
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'raw-table@example.test',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(AiChatWidget::class)
+        ->set('open', true)
+        ->set('messages', [
+            ['role' => 'assistant', 'content' => '<table><tr><td>secreto</td></tr></table>'],
+        ])
+        ->assertDontSee('<table>', false)
+        ->assertSee('<table><tr><td>secreto</td></tr></table>');
+});
+
 it('escapes raw html in assistant messages', function () {
     $user = User::query()->create([
         'name' => 'Seba',

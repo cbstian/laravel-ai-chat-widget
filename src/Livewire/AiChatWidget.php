@@ -175,10 +175,18 @@ class AiChatWidget extends Component
 
     public function renderMarkdown(string $markdown): string
     {
-        return (string) str($markdown)->markdown([
+        $html = (string) str($markdown)->markdown([
             'html_input' => 'escape',
             'allow_unsafe_links' => false,
         ]);
+
+        $wrapped = preg_replace(
+            '/<table\b[^>]*>.*?<\/table>/is',
+            '<div class="pc-ai-chat__table">$0</div>',
+            $html,
+        );
+
+        return is_string($wrapped) ? $wrapped : $html;
     }
 
     public function render(): View
