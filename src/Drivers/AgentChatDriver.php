@@ -167,13 +167,8 @@ class AgentChatDriver implements ChatDriver
 
     public function messages(Authenticatable $user, ?string $conversationId, int $limit = 50): array
     {
-        if (blank($conversationId) && config('ai-chat.persist', true)) {
-            $session = AiChatSession::query()
-                ->where('user_id', $user->getAuthIdentifier())
-                ->latest('updated_at')
-                ->first();
-
-            $conversationId = $session?->agent_conversation_id;
+        if (blank($conversationId)) {
+            $conversationId = $this->activeConversationId($user);
         }
 
         if (blank($conversationId)) {
@@ -181,6 +176,21 @@ class AgentChatDriver implements ChatDriver
         }
 
         return $this->completedMessages($conversationId, $limit);
+    }
+
+    public function activeConversationId(Authenticatable $user): ?string
+    {
+        if (! config('ai-chat.persist', true)) {
+            return null;
+        }
+
+        $conversationId = AiChatSession::query()
+            ->where('user_id', $user->getAuthIdentifier())
+            ->latest('updated_at')
+            ->latest('id')
+            ->value('agent_conversation_id');
+
+        return is_string($conversationId) && $conversationId !== '' ? $conversationId : null;
     }
 
     /**
@@ -240,14 +250,14 @@ class AgentChatDriver implements ChatDriver
         }
 
         if (blank($conversationId)) {
-            $open = AiChatSession::query()
+            $latest = AiChatSession::query()
                 ->where('user_id', $user->getAuthIdentifier())
-                ->whereNull('agent_conversation_id')
                 ->latest('updated_at')
+                ->latest('id')
                 ->first();
 
-            if ($open !== null) {
-                return $open;
+            if ($latest !== null) {
+                return $latest;
             }
         }
 

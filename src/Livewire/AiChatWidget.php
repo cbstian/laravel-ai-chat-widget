@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cbstian\AiChat\Livewire;
 
 use Cbstian\AiChat\Contracts\ChatDriver;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -29,6 +30,7 @@ class AiChatWidget extends Component
 
     public ?string $error = null;
 
+    #[Locked]
     public ?string $conversationId = null;
 
     /** @var list<array{role: string, content: string}> */
@@ -48,11 +50,11 @@ class AiChatWidget extends Component
         $driver = app(ChatDriver::class);
         $user = Auth::user();
 
-        if (! $driver->canAccess($user)) {
+        if (! $user instanceof Authenticatable || ! $driver->canAccess($user)) {
             return;
         }
 
-        $this->messages = $driver->messages($user, $this->conversationId);
+        $this->loadMessages($user);
     }
 
     public function toggle(): void
@@ -64,8 +66,8 @@ class AiChatWidget extends Component
         $this->open = ! $this->open;
         $this->error = null;
 
-        if ($this->open && $this->messages === []) {
-            $this->messages = app(ChatDriver::class)->messages(Auth::user(), $this->conversationId);
+        if ($this->open && $this->messages === [] && Auth::user() instanceof Authenticatable) {
+            $this->loadMessages(Auth::user());
         }
 
         if (! $this->open) {
@@ -160,6 +162,17 @@ class AiChatWidget extends Component
         $this->streamingAnswer = '';
         $this->error = null;
         $this->prompt = '';
+    }
+
+    protected function loadMessages(Authenticatable $user): void
+    {
+        $driver = app(ChatDriver::class);
+
+        if (blank($this->conversationId)) {
+            $this->conversationId = $driver->activeConversationId($user);
+        }
+
+        $this->messages = $driver->messages($user, $this->conversationId);
     }
 
     public function welcomeHtml(): string

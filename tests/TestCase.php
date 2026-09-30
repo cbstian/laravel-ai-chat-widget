@@ -29,6 +29,7 @@ abstract class TestCase extends Orchestra
             'ai-chat.model' => 'gpt-4o-mini',
             'ai.default' => 'openai',
             'ai.providers.openai.key' => 'test-key',
+            'ai.conversations.generate_title' => false,
         ]);
 
         $this->setUpDatabase();

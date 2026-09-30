@@ -61,6 +61,46 @@ it('sends a message through the widget using the fake gateway', function () {
     expect(AiChatTurnLog::query()->first()->succeeded)->toBeTrue();
 });
 
+it('keeps earlier messages when a remounted widget sends another one', function () {
+    FakeChatAgent::fake([
+        'Primera respuesta.',
+        'Segunda respuesta.',
+    ]);
+
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'widget-continue@example.test',
+    ]);
+
+    $this->actingAs($user);
+
+    ob_start();
+
+    try {
+        Livewire::test(AiChatWidget::class)
+            ->set('open', true)
+            ->set('prompt', 'Primer mensaje')
+            ->call('submit')
+            ->call('ask')
+            ->assertSee('Primer mensaje')
+            ->assertSee('Primera respuesta.');
+
+        Livewire::test(AiChatWidget::class)
+            ->set('open', true)
+            ->assertSee('Primer mensaje')
+            ->assertSee('Primera respuesta.')
+            ->set('prompt', 'Segundo mensaje')
+            ->call('submit')
+            ->call('ask')
+            ->assertSee('Primer mensaje')
+            ->assertSee('Primera respuesta.')
+            ->assertSee('Segundo mensaje')
+            ->assertSee('Segunda respuesta.');
+    } finally {
+        ob_end_clean();
+    }
+});
+
 it('ships markdown table styles that stay visible inside the panel', function () {
     $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/ai-chat.css');
 

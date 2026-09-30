@@ -11,6 +11,7 @@ use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Ai\Enums\MessageStatus;
+use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Models\ConversationMessage;
 use Laravel\Ai\Streaming\Events\TextDelta;
 
@@ -112,6 +113,69 @@ it('does not create sessions when persist is disabled', function () {
 
     expect(AiChatSession::query()->count())->toBe(0);
     expect(AiChatTurnLog::query()->count())->toBe(0);
+});
+
+it('continues the visible conversation when the next message has no conversation id', function () {
+    FakeChatAgent::fake([
+        'Primera respuesta.',
+        'Segunda respuesta.',
+    ]);
+
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'continue@example.test',
+    ]);
+
+    $driver = app(ChatDriver::class);
+
+    $first = $driver->ask($user, 'Primer mensaje', null, [], fn () => null);
+
+    // Igual que el widget al remontarse: muestra el historial, pero el id en memoria vuelve a null.
+    expect($driver->messages($user, null))->toBe([
+        ['role' => 'user', 'content' => 'Primer mensaje'],
+        ['role' => 'assistant', 'content' => 'Primera respuesta.'],
+    ]);
+
+    $second = $driver->ask($user, 'Segundo mensaje', null, [], fn () => null);
+
+    expect($second->conversationId)->toBe($first->conversationId)
+        ->and(Conversation::query()->count())->toBe(1)
+        ->and(AiChatSession::query()->count())->toBe(1)
+        ->and($driver->messages($user, null))->toBe([
+            ['role' => 'user', 'content' => 'Primer mensaje'],
+            ['role' => 'assistant', 'content' => 'Primera respuesta.'],
+            ['role' => 'user', 'content' => 'Segundo mensaje'],
+            ['role' => 'assistant', 'content' => 'Segunda respuesta.'],
+        ]);
+});
+
+it('starts a separate conversation after startNew', function () {
+    FakeChatAgent::fake([
+        'Primera respuesta.',
+        'Conversación nueva.',
+    ]);
+
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'new-chat@example.test',
+    ]);
+
+    $driver = app(ChatDriver::class);
+
+    $first = $driver->ask($user, 'Primer mensaje', null, [], fn () => null);
+    $driver->startNew($user);
+    $second = $driver->ask($user, 'Otro tema', null, [], fn () => null);
+
+    expect($second->conversationId)->not->toBe($first->conversationId)
+        ->and(Conversation::query()->count())->toBe(2)
+        ->and($driver->messages($user, null))->toBe([
+            ['role' => 'user', 'content' => 'Otro tema'],
+            ['role' => 'assistant', 'content' => 'Conversación nueva.'],
+        ])
+        ->and($driver->messages($user, $first->conversationId))->toBe([
+            ['role' => 'user', 'content' => 'Primer mensaje'],
+            ['role' => 'assistant', 'content' => 'Primera respuesta.'],
+        ]);
 });
 
 it('does not query ai_chat_sessions when persist is disabled and there is no conversation', function () {

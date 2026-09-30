@@ -28,6 +28,8 @@ interface ChatDriver
      */
     public function messages(Authenticatable $user, ?string $conversationId, int $limit = 50): array;
 
+    public function activeConversationId(Authenticatable $user): ?string;
+
     /**
      * @param  array<string, mixed>  $context
      */
