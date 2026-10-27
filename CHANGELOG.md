@@ -4,6 +4,7 @@
 
 ### Changed
 - Requiere `laravel/ai` ^1.0. Los logs de tokens leen `inputTokens` y `outputTokens`. El historial del widget solo muestra turnos `completed`.
+- Las respuestas en Markdown muestran links, listas, código, citas e imágenes. Los links http(s) abren en una pestaña nueva.
 
 ### Added
 - Tools `ListMarkdownDocuments` y `ReadMarkdownDocument` para que el LLM lea Markdown de directorios configurados.

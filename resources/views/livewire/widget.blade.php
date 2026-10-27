@@ -80,7 +80,7 @@
                         <div class="pc-ai-chat__bubble pc-ai-chat__bubble--user">{{ $pendingQuestion }}</div>
                     </div>
                     <div class="pc-ai-chat__bubble pc-ai-chat__bubble--assistant">
-                        <span wire:stream="streamingAnswer">{{ $streamingAnswer !== '' ? $streamingAnswer : '…' }}</span>
+                        <span class="pc-ai-chat__stream" wire:stream="streamingAnswer">{{ $streamingAnswer !== '' ? $streamingAnswer : '…' }}</span>
                     </div>
                 @endif
             </div>

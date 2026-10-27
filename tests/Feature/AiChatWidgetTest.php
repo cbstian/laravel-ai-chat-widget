@@ -108,7 +108,11 @@ it('ships markdown table styles that stay visible inside the panel', function ()
         ->toContain('.pc-ai-chat__table')
         ->toContain('overflow-x: auto')
         ->toContain('border-collapse: collapse')
-        ->toContain('display: table-cell');
+        ->toContain('display: table-cell')
+        ->toContain('.pc-ai-chat__md a')
+        ->toContain('.pc-ai-chat__md pre')
+        ->toContain('.pc-ai-chat__md ul')
+        ->toContain('.pc-ai-chat__stream { white-space: pre-wrap; }');
 });
 
 it('renders markdown tables inside a scrollable wrapper', function () {
@@ -131,6 +135,76 @@ MD],
         ->assertSee('<div class="pc-ai-chat__table"><table>', false)
         ->assertSee('Ana')
         ->assertSee('Activo');
+});
+
+it('opens external markdown links in a new tab', function () {
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'external-link@example.test',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(AiChatWidget::class)
+        ->set('open', true)
+        ->set('messages', [
+            ['role' => 'assistant', 'content' => 'Ver [guía](https://example.com/guia).'],
+        ])
+        ->assertSee('class="pc-ai-chat__md"', false)
+        ->assertSee('href="https://example.com/guia"', false)
+        ->assertSee('target="_blank"', false)
+        ->assertSee('rel="noopener noreferrer"', false)
+        ->assertSee('guía');
+});
+
+it('keeps relative markdown links in the same tab', function () {
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'relative-link@example.test',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(AiChatWidget::class)
+        ->set('open', true)
+        ->set('messages', [
+            ['role' => 'assistant', 'content' => 'Ver [factura](/facturas/1).'],
+        ])
+        ->assertSee('href="/facturas/1"', false)
+        ->assertDontSee('target="_blank"', false);
+});
+
+it('keeps mailto links in the same tab', function () {
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'mailto-link@example.test',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(AiChatWidget::class)
+        ->set('open', true)
+        ->set('messages', [
+            ['role' => 'assistant', 'content' => 'Escribe a [soporte](mailto:a@b.test).'],
+        ])
+        ->assertSee('href="mailto:a@b.test"', false)
+        ->assertDontSee('target="_blank"', false);
+});
+
+it('shows the live answer as preformatted text', function () {
+    $user = User::query()->create([
+        'name' => 'Seba',
+        'email' => 'stream@example.test',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(AiChatWidget::class)
+        ->set('open', true)
+        ->set('pendingQuestion', 'Hola')
+        ->set('streamingAnswer', "Primera línea\n\nSegunda línea")
+        ->assertSee('pc-ai-chat__stream', false)
+        ->assertSee('Primera línea');
 });
 
 it('escapes raw html tables in assistant messages', function () {

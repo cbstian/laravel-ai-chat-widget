@@ -211,7 +211,7 @@ El chat solo se renderiza si hay un usuario autenticado y `canAccess()` es true.
 - `AI_CHAT_FILAMENT_HOOK=true` registra `PanelsRenderHook::BODY_END` con los estilos y el widget. No montes el componente otra vez en el panel: saldrían dos chats.
 - Manual, con el flag en `false`: el mismo par de directivas en un render hook `BODY_END`.
 
-El HTML del welcome y de las respuestas pasa por Markdown con el HTML crudo escapado y sin links `javascript:`. El stream en vivo también escapa el texto. No hace falta sanitizar otra vez en la vista.
+El HTML del welcome y de las respuestas pasa por Markdown con el HTML crudo escapado y sin links `javascript:`. Los links `http` y `https` abren en una pestaña nueva; los relativos y `mailto:` se quedan en la misma. Listas, código, citas, imágenes y tablas usan el CSS del panel. El stream en vivo sigue en texto escapado, con los saltos de línea visibles. No hace falta sanitizar otra vez en la vista.
 
 ## Persistencia
 

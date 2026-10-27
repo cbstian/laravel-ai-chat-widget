@@ -80,8 +80,77 @@
   margin-right: auto; background: var(--pc-ai-assistant-bubble); color: #111827;
   border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,.04);
 }
-.pc-ai-chat__bubble--assistant:has(.pc-ai-chat__table) {
+.pc-ai-chat__bubble--assistant:has(.pc-ai-chat__table),
+.pc-ai-chat__bubble--assistant:has(.pc-ai-chat__md pre) {
   width: 100%; max-width: 100%;
+}
+.pc-ai-chat__stream { white-space: pre-wrap; }
+.pc-ai-chat__md > :first-child { margin-top: 0; }
+.pc-ai-chat__md > :last-child { margin-bottom: 0; }
+.pc-ai-chat__md p { margin: 0.4em 0; }
+.pc-ai-chat__md a {
+  color: var(--pc-ai-primary);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+.pc-ai-chat__md ul,
+.pc-ai-chat__md ol {
+  margin: 0.4em 0;
+  padding-left: 1.25rem;
+}
+.pc-ai-chat__md li { margin: 0.15em 0; }
+.pc-ai-chat__md li > input[type="checkbox"] {
+  margin: 0 0.35rem 0 0;
+  vertical-align: middle;
+}
+.pc-ai-chat__md h1,
+.pc-ai-chat__md h2,
+.pc-ai-chat__md h3,
+.pc-ai-chat__md h4,
+.pc-ai-chat__md h5,
+.pc-ai-chat__md h6 {
+  margin: 0.6em 0 0.3em;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.pc-ai-chat__md h1 { font-size: 1rem; }
+.pc-ai-chat__md h2 { font-size: 0.9375rem; }
+.pc-ai-chat__md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  background: #f3f4f6;
+  border-radius: 0.25rem;
+  padding: 0.1em 0.3em;
+}
+.pc-ai-chat__md pre {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.75rem;
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+.pc-ai-chat__md pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+.pc-ai-chat__md blockquote {
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid #d1d5db;
+  color: #374151;
+}
+.pc-ai-chat__md hr {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 0.75rem 0;
+}
+.pc-ai-chat__md img {
+  max-width: 100%;
+  height: auto;
 }
 .pc-ai-chat__table {
   overflow-x: auto; max-width: 100%; margin: 0.5rem 0;

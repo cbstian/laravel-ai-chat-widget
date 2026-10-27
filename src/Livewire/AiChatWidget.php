@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Cbstian\AiChat\Livewire;
 
 use Cbstian\AiChat\Contracts\ChatDriver;
+use DOMDocument;
+use DOMElement;
+use DOMNode;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -193,13 +196,75 @@ class AiChatWidget extends Component
             'allow_unsafe_links' => false,
         ]);
 
-        $wrapped = preg_replace(
-            '/<table\b[^>]*>.*?<\/table>/is',
-            '<div class="pc-ai-chat__table">$0</div>',
-            $html,
+        return $this->decorateMarkdown($html);
+    }
+
+    private function decorateMarkdown(string $html): string
+    {
+        $document = new DOMDocument;
+        $internalErrors = libxml_use_internal_errors(true);
+
+        $loaded = $document->loadHTML(
+            '<?xml encoding="UTF-8"><div id="pc-ai-chat-md">'.$html.'</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD,
         );
 
-        return is_string($wrapped) ? $wrapped : $html;
+        libxml_clear_errors();
+        libxml_use_internal_errors($internalErrors);
+
+        $root = $loaded ? $document->getElementById('pc-ai-chat-md') : null;
+
+        if (! $root instanceof DOMElement) {
+            return '<div class="pc-ai-chat__md">'.$html.'</div>';
+        }
+
+        $this->openExternalMarkdownLinks($root);
+        $this->wrapMarkdownTables($document, $root);
+
+        $root->setAttribute('class', 'pc-ai-chat__md');
+        $root->removeAttribute('id');
+
+        $rendered = $document->saveHTML($root);
+
+        return is_string($rendered) ? $rendered : '<div class="pc-ai-chat__md">'.$html.'</div>';
+    }
+
+    private function openExternalMarkdownLinks(DOMElement $root): void
+    {
+        foreach ($root->getElementsByTagName('a') as $anchor) {
+            if (preg_match('/\Ahttps?:\/\//i', $anchor->getAttribute('href')) !== 1) {
+                continue;
+            }
+
+            $anchor->setAttribute('target', '_blank');
+            $anchor->setAttribute('rel', 'noopener noreferrer');
+        }
+    }
+
+    private function wrapMarkdownTables(DOMDocument $document, DOMElement $root): void
+    {
+        $tables = [];
+
+        foreach ($root->getElementsByTagName('table') as $table) {
+            $tables[] = $table;
+        }
+
+        foreach ($tables as $table) {
+            $parent = $table->parentNode;
+
+            if (! $parent instanceof DOMNode) {
+                continue;
+            }
+
+            if ($parent instanceof DOMElement && str_contains($parent->getAttribute('class'), 'pc-ai-chat__table')) {
+                continue;
+            }
+
+            $wrapper = $document->createElement('div');
+            $wrapper->setAttribute('class', 'pc-ai-chat__table');
+            $parent->insertBefore($wrapper, $table);
+            $wrapper->appendChild($table);
+        }
     }
 
     public function render(): View
