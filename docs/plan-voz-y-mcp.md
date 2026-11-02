@@ -1,14 +1,14 @@
 # Plan: dictado por voz e integración con Laravel MCP
 
 Estado: **análisis y plan**. No hay código de estas funciones en el paquete.
-Fecha de la investigación: 2026-11-02.
+Fecha de la investigación: 2026-11-02. Decisión de voz del autor incorporada el mismo día.
 Paquete: `cbstian/laravel-ai-chat-widget` (pre-`1.0`, instalaciones de producción vía VCS).
 
 Este documento no es API pública. La política de versionado trata `docs/` como interno salvo que un release lo indique.
 
 ## Recomendación corta
 
-1. **Voz.** Camino principal: Web Speech API en el navegador (`SpeechRecognition` / `webkitSpeechRecognition`), idioma `es-CL`, desactivado por defecto. El texto dictado se escribe en el textarea para que la persona lo revise y pulse enviar. Fallback posterior, también opt-in: grabar con `MediaRecorder` y transcribir en el servidor con `Laravel\Ai\Transcription`. No hace falta un proveedor nuevo fuera de `laravel/ai`.
+1. **Voz.** STT con drivers, todo apagado por defecto. `voice.driver` elige uno: `browser` (Web Speech API, sin costo de API), `laravel-ai` (`Laravel\Ai\Transcription` con el proveedor que el SDK sí transcribe) o `xai` (cliente propio del paquete contra `POST https://api.x.ai/v1/stt`, porque `laravel/ai` no hace STT en xAI y ese endpoint no es el de OpenAI). Un manager estilo Laravel permite que la app registre otro driver. El texto rellena el textarea y no se envía solo, salvo `voice.auto_submit`. El WebSocket de xAI queda fuera de estas fases.
 2. **MCP.** No llamar al servidor MCP de la propia app por HTTP ni por `mcp:start`. `laravel/ai` ^1.0 ya envuelve las clases `Laravel\Mcp\Server\Tool` in-process (`McpServerTool`) y también las tools de un cliente MCP. El paquete debe ofrecer un catálogo opt-in, con allowlist vacía, y `laravel/mcp` solo como `suggest`. La app sigue registrando las tools en `ChatAgent::tools()`. La confirmación humana de tools que escriben es una fase aparte: el widget hoy no sabe reanudar un turno en pausa.
 
 Las dos funciones caben en un **MINOR** (`0.x` o, más adelante, `1.x`): claves de config nuevas con default apagado, sin migración, sin método nuevo obligatorio en `ChatDriver`.
@@ -49,115 +49,258 @@ AiChatWidget  ──ask()──►  ChatDriver (AgentChatDriver)
 
 El `context` del widget viaja al factory. No controla la UI. Un override de voz por pantalla sería otra prop de `mount()`, no una clave dentro de `context`.
 
+La voz no existe en el código. Cuando se implemente, el manager de STT queda al lado del widget: no pasa por `ChatDriver` ni por `ask()`.
+
 ---
 
 ## 2. Dictado por voz
 
-### 2.1 Opciones
+Decisión del autor: un solo interruptor (`voice.enabled`, default `false`) y un driver (`voice.driver`). No hay fallback automático de navegador a servidor. Quien elige `browser` no graba para Laravel; quien elige `laravel-ai` o `xai` no usa Web Speech. Cambiar de driver es un cambio de config, no un segundo motor en paralelo.
 
-| | Web Speech API | Grabar y transcribir con `laravel/ai` |
+### 2.1 Drivers
+
+| Driver | Dónde corre | Cuándo usarlo |
 | --- | --- | --- |
-| Dónde corre | Navegador. Chrome/Edge mandan el audio al servicio del vendor (Google o Microsoft). Safari usa el motor de Apple. | El navegador graba (`MediaRecorder`) y Livewire sube el archivo. `Transcription::fromUpload(...)->generate()` lo manda al provider de `config/ai.php` (OpenAI, compatible, Groq, etc.). |
-| Soporte (nov 2026) | Chrome, Edge, Safari 14.1+ / iOS 14.5+ (prefijo `webkit`). Firefox de escritorio y Android: no está habilitado. Chromium embebido (Electron) suele fallar con error `network` porque no tiene el servicio de Google. En iPhone todos los navegadores usan WebKit, así que sí hay reconocimiento. | Cualquier navegador que grabe `audio/webm`, `audio/ogg`, `audio/mp4` o `audio/wav`. El gateway OpenAI de `laravel/ai` ya mapea esos MIME. |
-| `es-CL` | `recognition.lang = 'es-CL'` (BCP 47). Chrome lo lista desde hace años. La calidad depende del servicio del vendor, no del paquete. Si no se fija `lang`, gana el `lang` del HTML o el del navegador. | El idioma del SDK es ISO 639-1 (`es`), no `es-CL`. Whisper y los modelos `gpt-4o-*-transcribe` no distinguen el acento chileno con un tag regional. Los tests del SDK exponen `language` en el prompt de transcripción; el método público del builder hay que confirmarlo en el minor instalado antes de codificar. |
-| Privacidad | El audio **no** pasa por Laravel, pero **sí** sale del dispositivo hacia Google, Microsoft o Apple. Hay que decirlo en la UI. Hace falta HTTPS (o localhost), permiso de micrófono y un gesto del usuario (`start()` desde el click). | El audio sale hacia el provider de IA que la app ya configuró. No se debe persistir el archivo. Encaja mejor si la política interna prohíbe Google pero ya acepta OpenAI (u otro provider de `laravel/ai`). |
-| Costo y latencia | Sin costo de API y el texto llega mientras se habla (`interimResults`). | Un request por toma, tokens de audio, y la persona espera el upload. Diarización no aporta en un chat de una sola voz. |
-| Offline | Chrome reciente tiene `processLocally`, `available()` e `install()`, con pocos idiomas. No depender de eso en la v1. | No. |
-| Encaje con el paquete | Solo Blade, Alpine y CSS. El `prompt` sigue siendo el de siempre. Cero cambios de contrato y cero migraciones. | `WithFileUploads` en el componente, límites de tamaño y duración, rate limit propio, borrado del temporal, tests con `Transcription::fake()`. |
+| `browser` | `SpeechRecognition` / `webkitSpeechRecognition` en el navegador | Sin costo de API. Chrome, Edge y Safari 14.1+ / iOS 14.5+. Firefox de escritorio no lo tiene habilitado. En Chrome el audio va al servicio de Google (o al de Microsoft en Edge; Apple en Safari), no a la app. |
+| `laravel-ai` | `MediaRecorder` en el navegador, transcripción en PHP con `Laravel\Ai\Transcription` | El SDK, en la matriz publicada el 2026-11-02, transcribe con OpenAI, OpenAI-compatible, ElevenLabs, Groq, Mistral, Gemini y OpenRouter. xAI no está en esa fila. |
+| `xai` | El mismo audio grabado, pero un cliente HTTP del paquete a `POST https://api.x.ai/v1/stt` | Grok. Hace falta porque el endpoint no es `/audio/transcriptions` ni acepta el cuerpo de OpenAI. Meterlo como provider `openai-compatible` de `laravel/ai` mandaría el archivo al path equivocado. |
+| nombre que registre la app | Clase propia vía el manager | Otro proveedor, sin fork del paquete. |
 
-### 2.2 Recomendación
+`laravel/ai` 1.3.0 sí habla con xAI para texto, imágenes y algunas tools. La fila STT de la documentación no lo incluye. Un `Transcription::...->generate(provider: 'xai')` no es el plan.
 
-**Primero el navegador. El servidor queda como fallback opt-in, no como camino por defecto.**
+Precio REST de xAI indicado para este plan: USD 0,10 por hora de audio. La página de capacidades consultada describe el contrato y los formatos; no repite la tarifa en el extracto. El WebSocket se evalúa en la fase V3 y no entra en V1 ni en V2.
 
-Motivos:
+### 2.2 Contrato y manager
 
-- El gesto del usuario es dictar una frase y corregirla. Meter el audio en el mismo provider del chat añade costo, latencia y una superficie de upload que hoy no existe.
-- Las apps en producción no tienen que configurar un modelo de transcripción para probar la función.
-- Firefox y los Chromium sin servicio de voz son la razón del fallback, no el caso principal. Si en las apps reales Firefox es residual, la fase de servidor puede esperar.
+Contrato nuevo, público en cuanto se publique (MINOR, no toca `ChatDriver`):
 
-El fallback no es un segundo motor en paralelo. Con `browser_with_server_fallback` el navegador se usa si `SpeechRecognition` existe; si no, se muestra el botón de grabación. Nunca se mandan los dos.
+```php
+namespace Cbstian\AiChat\Contracts;
 
-### 2.3 Niveles de activación
+interface SpeechToTextDriver
+{
+    /** true: transcribe el navegador. false: el widget sube audio y llama a transcribe(). */
+    public function runsInBrowser(): bool;
 
-Hay tres niveles distintos. Conviene implementar los tres, con esta precedencia: **el servidor manda; el cliente solo puede apagar**.
+    public function transcribe(SpeechAudio $audio): SpeechTranscript;
+}
+```
 
-| Nivel | Qué es | Default | Notas |
-| --- | --- | --- | --- |
-| Paquete / app | `ai-chat.voice.enabled` y `AI_CHAT_VOICE`. Cada app tiene su config: este flag **es** el interruptor por aplicación. | `false` | Una app que publicó `config/ai-chat.php` no recibe la clave sola. Leer con default `false`. |
-| Panel Filament | `voice.panels`: `null` (todos los paneles, si la voz está on) o lista de ids (`admin`, `cliente`). Fuera de Filament no aplica. | `null` | Hoy el hook es global. El widget puede leer `Filament::getCurrentPanel()?->getId()` solo si la clase existe. No hace falta un hook por panel. |
-| Pantalla | Argumento de mount: `@livewire('ai-chat-widget', ['voice' => false])`. | hereda la config | Sirve para una vista concreta. No va dentro de `context`, porque `context` es del agente. |
-| Persona | Toggle en el header del panel, recordado en `localStorage` (`pc-ai-chat-voice`). | visible si la voz está on; `voice.user_can_disable` default `true` | Solo oculta el botón. No puede encender una voz que la config apagó, ni elegir el driver servidor. Sin columna nueva y sin migración. |
+- `SpeechAudio`: ruta temporal o stream, MIME, nombre de archivo, bytes y duración que declara el cliente (no fiarse de ella para el tope; el tope real es el tamaño).
+- `SpeechTranscript`: `text` obligatorio. `language` y `duration` opcionales, solo para el que llama. El widget usa `text`. No se guardan `words`.
+- El driver `browser` devuelve `runsInBrowser(): true`. Su `transcribe()` lanza si alguien lo invoca: ese camino no debe salir a la red.
 
-No guardar el toggle en base de datos en la primera entrega. Un ajuste por usuario sería otra tabla o una preferencia de la app, y no hace falta para probar la función.
+Manager estilo Laravel, registrado en el contenedor (`Cbstian\AiChat\Speech\SpeechToTextManager`):
 
-### 2.4 Comportamiento de producto
+- `driver()` sin argumentos usa `config('ai-chat.voice.driver')`.
+- Drivers de paquete: `browser`, `laravel-ai`, `xai`.
+- La app añade uno en el `boot` de un service provider:
 
-- El micrófono escribe en el textarea. **No envía solo.** Así la persona corrige nombres propios y el rate limit no se gasta con falsos positivos.
-- Una sola toma (`continuous: false`) e interinos en el textarea (`interimResults: true`). Al soltar o al detectar `onspeechend`, el texto queda y el foco vuelve al input.
-- Si el navegador no tiene la API, el botón no se renderiza (fase 1) o cambia al modo grabación (fase 2).
-- Texto de ayuda corto, visible al activar: el reconocimiento del navegador lo procesa el proveedor del navegador, no esta aplicación.
-- El límite `max_prompt_length` (8000) sigue aplicando al enviar. Si el dictado se pasa, se recorta en el cliente y `submit()` ya valida.
+```php
+app(\Cbstian\AiChat\Speech\SpeechToTextManager::class)->extend(
+    'acme',
+    fn () => new \App\Speech\AcmeSpeechToTextDriver,
+);
+```
 
-### 2.5 Fases de voz
+Un nombre desconocido no cae en `browser`. El widget trata la voz como apagada y reporta el error. Caer en el navegador sería mandar audio a Google cuando la app pidió Grok, o al revés.
 
-#### Fase V1 — Web Speech, opt-in
+La extensión prevista es un driver de servidor. Un driver de navegador propio exigiría un gancho JS que este plan no promete.
 
-Config propuesta (defaults seguros):
+`SpeechToTextDriver` no se añade a `ChatDriver`. Las apps con un driver de chat propio no tienen que implementarlo.
+
+### 2.3 Config
+
+Todas las claves se leen con `data_get` y default. Un `config/ai-chat.php` publicado y viejo no tiene el bloque `voice`: eso equivale a apagado.
 
 ```php
 'voice' => [
     'enabled' => env('AI_CHAT_VOICE', false),
-    'locale' => env('AI_CHAT_VOICE_LOCALE', 'es-CL'),
-    'driver' => 'browser', // browser | server | browser_with_server_fallback
+    'driver' => env('AI_CHAT_VOICE_DRIVER', 'browser'),
+    // BCP 47. El browser lo usa tal cual. laravel-ai y xai lo mapean (ver abajo).
+    'language' => env('AI_CHAT_VOICE_LANGUAGE', 'es-CL'),
+    'auto_submit' => env('AI_CHAT_VOICE_AUTO_SUBMIT', false),
     'user_can_disable' => true,
-    'panels' => null, // null o lista de ids de panel Filament
+    'panels' => null,
+
+    'max_seconds' => (int) env('AI_CHAT_VOICE_MAX_SECONDS', 60),
+    'max_kilobytes' => (int) env('AI_CHAT_VOICE_MAX_KB', 2048),
+    'rate_limit_per_minute' => (int) env('AI_CHAT_VOICE_RATE_LIMIT', 10),
+
+    'browser' => [
+        'interim_results' => true,
+        'continuous' => false,
+    ],
+
+    'laravel-ai' => [
+        // Vacío: el driver elige un provider con STT, no asume que ai.default sepa transcribir.
+        'provider' => env('AI_CHAT_VOICE_PROVIDER'),
+        'model' => env('AI_CHAT_VOICE_MODEL'),
+        'diarize' => false,
+    ],
+
+    'xai' => [
+        'key' => env('XAI_API_KEY'),
+        'url' => env('AI_CHAT_XAI_STT_URL', 'https://api.x.ai/v1/stt'),
+        'model' => env('AI_CHAT_XAI_STT_MODEL', 'grok-voice-transcribe-2.0'),
+        // ITN: números y montos en forma escrita. Exige language. Default true.
+        'format' => env('AI_CHAT_XAI_STT_FORMAT', true),
+        'filler_words' => false,
+        'keyterms' => [],
+        'timeout' => 30,
+    ],
 ],
 ```
 
-En V1, `driver` distinto de `browser` se trata como `browser` si el servidor aún no existe, o se ignora el botón si se pide `server` antes de V2. Mejor: V1 solo acepta `browser`; un valor desconocido no enciende nada.
+`enabled` en false gana siempre, aunque `driver` esté puesto. El default de `driver` es `browser` para que, el día que alguien encienda solo el flag, no empiece a subir audio ni a gastar API. Encender voz de pago es una segunda decisión explícita (`AI_CHAT_VOICE_DRIVER=laravel-ai` o `xai`).
 
-Archivos:
+Niveles, con la misma precedencia de antes: el servidor manda y el cliente solo puede apagar.
 
-- `config/ai-chat.php` — bloque `voice`.
-- `resources/views/livewire/widget.blade.php` — botón junto a enviar, Alpine en el formulario. Sin archivo JS compilado: el paquete no tiene bundler y la vista ya usa Alpine.
-- `resources/css/ai-chat.css` — estado escuchando (pulso), botón deshabilitado, foco visible.
-- `src/Livewire/AiChatWidget.php` — en `render()`, pasar `voiceEnabled` ya resuelto (config + panel + prop de mount). La prop de mount queda `#[Locked]` para que el cliente no la encienda.
-- `docs/INTEGRATION.md`, guideline de Boost y skill `ai-chat-widget` — una fila de config y la advertencia de privacidad. El stub del agente no cambia.
-- `tests/Feature/AiChatWidgetTest.php` y `ConfigTest.php` — ver abajo.
+| Nivel | Qué es | Default |
+| --- | --- | --- |
+| App | `voice.enabled`. Cada instalación tiene su config. | `false` |
+| Driver | `voice.driver` | `browser` (no hace nada mientras `enabled` sea false) |
+| Panel Filament | `voice.panels`: `null` o lista de ids. Fuera de Filament no aplica. | `null` |
+| Pantalla | `@livewire('ai-chat-widget', ['voice' => false])`, prop `#[Locked]`. No va dentro de `context`. | hereda la config. Solo puede forzar false |
+| Persona | Toggle en `localStorage` (`pc-ai-chat-voice`) si `user_can_disable` | oculta el botón; no cambia el driver ni enciende la función |
 
-Sin migración, sin contrato nuevo, sin cambio de `ask()`.
+Sin columna nueva y sin migración.
 
-Tests Pest:
+#### Idioma
 
-- Con el default, el HTML del widget no contiene el botón de micrófono ni `SpeechRecognition`.
-- Con `voice.enabled=true` y un usuario autorizado, el botón está y el `lang` es `es-CL`.
-- Con `voice.panels` que no incluye el panel actual (Filament falso o id inyectado), el botón no está.
-- Con `voice` en `false` en el mount, el botón no está aunque la config esté on.
-- Un invitado sigue sin ver el panel.
-- `submit()` / `ask()` no cambian: el texto dictado es un `prompt` normal.
+Una sola clave, `voice.language`, default `es-CL`.
 
-La prueba de micrófono real queda en el workbench (`composer serve`), a mano, en Chrome y Safari. Pest no tiene navegador.
+| Driver | Qué se envía |
+| --- | --- |
+| `browser` | `recognition.lang = 'es-CL'`. Si queda vacío, el navegador usa el `lang` del HTML. |
+| `laravel-ai` | El subtag primario ISO 639-1: `es-CL` → `es`. Whisper y el resto del SDK no distinguen el acento. El builder público hay que confirmarlo en el minor instalado: los tests del SDK leen `$prompt->language`; la guía de transcripción no muestra el método en el extracto del 2026-11-02. |
+| `xai` | `language` del multipart. Español documentado: `es` (el modelo lo trata como español de México) y `es-ES`. No hay `es-CL`. Mapear `es-CL` y `es-MX` a `es`, y dejar pasar `es-ES` si la app lo configuró. La respuesta trae el idioma detectado en BCP 47 (`es-mx`, etc.); no se usa para el textarea. |
 
-#### Fase V2 — fallback de servidor
+`format=true` en xAI sin `language` responde 400. Si el mapeo no produce idioma, el driver manda la transcripción sin `format`.
 
-Solo si V1 se queda corto (Firefox, o una app que no puede mandar audio al vendor del navegador).
+#### Audio que graba el navegador
 
-- `driver`: `server` o `browser_with_server_fallback`.
-- Acción Livewire `transcribe`, con `WithFileUploads`, que rechaza el archivo si el driver no es de servidor.
-- `Transcription::fromUpload($this->audio)->generate()` (y el idioma ISO `es` derivado del locale). Provider y modelo vacíos usan los defaults de `config/ai.php`. Claves opcionales: `voice.transcription_provider`, `voice.transcription_model`.
-- Topes: duración ~60 s, tamaño ~2 MB, MIME allowlist, rate limit distinto (`ai-chat:voice:{id}`, más estricto que los 20 mensajes/minuto). Borrar el temporal aunque la transcripción falle. No escribir el binario en `ai_chat_turn_logs`.
-- El texto vuelve al `prompt`. Sigue sin autoenvío.
-- Tests con `Transcription::fake()` y `preventStrayTranscription` si el SDK del minor lo expone (el de audio sí tiene `preventStrayAudio`; confirmar el de transcripción). Caso: driver `browser` ignora un upload. Caso: archivo grande o MIME raro falla con validación y no llama al provider.
+Un solo `MediaRecorder`, con el primer MIME que `isTypeSupported` acepte, en este orden:
 
-Riesgo: el trait de uploads abre un endpoint de Livewire en ese componente. La acción tiene que salir antes de tocar disco útil si la config está apagada.
+1. `audio/webm;codecs=opus` — Chrome, Edge, Firefox.
+2. `audio/webm`.
+3. `audio/mp4` — Safari (AAC dentro de MP4). En Safari viejo `MediaRecorder` no existe: el botón de los drivers de servidor no se muestra y el error es de UI, no una excepción de PHP.
 
-### 2.6 Cómo se actualiza una app que ya está en producción
+xAI auto-detecta contenedores. Acepta `webm`, `mp4`, `m4a`, `ogg`, `opus`, `wav`, `mp3`, `flac`, `aac` y otros. Para esos formatos no hay que mandar `audio_format` ni `sample_rate` (esos campos son para PCM/mulaw/alaw sin cabecera). El gateway OpenAI de `laravel/ai` ya nombra `webm` y `m4a` según el MIME. Groq, Gemini, ElevenLabs, Mistral y OpenRouter están en la matriz STT, pero el paquete no transcodifica: no se añade ffmpeg. Si un provider rechaza WebM, la app cambia de provider o de driver. El plan no promete un formato único para los siete.
 
-`composer update cbstian/laravel-ai-chat-widget`. No hay `migrate`. El widget se ve igual.
+Tope del paquete: 60 segundos y 2 MB. xAI acepta hasta 500 MB; ese techo no se usa. El cliente corta la grabación al llegar a `max_seconds`. El servidor rechaza por tamaño y por MIME, no por la duración que declare el JS.
 
-Si publicaron `config/ai-chat.php`, copiar el bloque `voice` cuando quieran encenderlo. Mientras no esté, `data_get(..., false)` lo deja apagado.
+### 2.4 Driver `laravel-ai`
 
-No hace falta volver a correr `ai-chat:install`. No toca `app/Ai`.
+`Transcription::fromUpload($file)` (o `fromPath` del temporal), con `provider` y `model` de `voice.laravel-ai` cuando vienen llenos. `diarize` default false: en un dictado de una persona no aporta.
+
+Si `provider` está vacío, no usar ciegamente `config('ai.default')`. Ese default puede ser `xai` o `anthropic`, que no transcriben. El driver exige `voice.laravel-ai.provider` o, si se quiere un atajo, solo acepta el default cuando ese provider está en la lista STT del SDK. Si no, error claro en el panel y cero requests.
+
+El idioma va en el builder cuando el minor lo permita. No activar diarización ni colas (`queue()`): el usuario está esperando el textarea.
+
+### 2.5 Driver `xai`
+
+`POST https://api.x.ai/v1/stt` con `Authorization: Bearer`. La key sale de `voice.xai.key` (`XAI_API_KEY`) y, si viene vacía, de `config('ai.providers.xai.key')` cuando `laravel/ai` ya la tenga. Hay que confirmar esa ruta en el `config/ai.php` publicado de la app al implementar. La key no se renderiza en Blade, ni en el JSON de Alpine, ni en los mensajes de error.
+
+Multipart, en este orden, porque xAI ignora los campos que van después de `file`:
+
+1. `model` — default `grok-voice-transcribe-2.0`.
+2. `language` — el mapeo de 2.3.
+3. `format` — `true` o se omite. Nunca `true` sin idioma.
+4. `filler_words` — default false (xAI ya quita «eh», «um»).
+5. `keyterm` — un part repetido por término, no `keyterm[0]`. Máximo 100 términos de 50 caracteres; el driver recorta y descarta el resto. El cliente HTTP de Laravel, si recibe un array, puede serializarlo como arreglo PHP: hay que armar el body a mano.
+6. `file` — último. Nombre con extensión acorde al MIME (`audio.webm`, `audio.mp4`).
+
+No usar el campo `url` de xAI. Evita que el proveedor descargue una URL y cierra un vector de SSRF si algún día el argumento saliera del usuario.
+
+De la respuesta JSON se lee `text`. `language`, `duration` y `words` no se persisten. `words` puede ser largo y no mejora el chat.
+
+Errores que ve la persona, sin el cuerpo crudo del upstream: 401 «no se pudo transcribir», 413 no debería ocurrir con el tope de 2 MB, 429 «demasiadas transcripciones», timeout a los 30 s. Un 400 por `format` sin idioma es un bug del driver, no un mensaje para el usuario final.
+
+### 2.6 WebSocket de xAI (fase futura, no V1 ni V2)
+
+Existe `wss://api.x.ai/v1/stt` (mismo modelo por defecto, query params, audio binario, eventos `transcript.created`, `transcript.partial`, `transcript.done`). No entra ahora.
+
+- La documentación dice que la API key no puede ir al navegador. Haría falta un proxy en Laravel que sostenga el socket.
+- PHP-FPM atiende un request y se va. Un dictado en vivo no cabe en la acción Livewire que usa el resto del widget.
+- `MediaRecorder` entrega un contenedor WebM u MP4. El modo `encoding=opus` del WebSocket quiere un paquete Opus crudo por frame, no el contenedor. PCM a 16 kHz exige resamplear en el cliente. El REST sí acepta el contenedor tal cual.
+- La UX elegida es pulsar, hablar, soltar y revisar. El REST alcanza. El socket aportaría interinos parecidos a Web Speech, con más piezas.
+
+V3, si algún día se hace: proxy de servidor, key solo en PHP, y un encoder en el navegador. Hasta entonces no hay claves `voice.xai.stream`.
+
+### 2.7 UI
+
+Común a los tres drivers. Alpine en la vista, sin Vite.
+
+Estados del botón: idle, pidiendo permiso, grabando (o escuchando, en `browser`), transcribiendo, error. El permiso denegado deja un texto en el panel y no reintenta solo. Mientras graba o transcribe, el enviar queda deshabilitado para no mandar un texto a medias.
+
+`browser`: una toma (`continuous: false`), interinos en el textarea si `interim_results` es true, el resultado final reemplaza al interino. Al terminar, el foco vuelve al input.
+
+`laravel-ai` y `xai`: pulsar empieza `MediaRecorder`, volver a pulsar (o el tope de segundos) lo detiene, el blob se sube, el botón muestra «transcribiendo…». El texto que vuelve se concatena al `prompt` con un espacio si ya había algo escrito. No sustituye lo que la persona había tipeado.
+
+`voice.auto_submit` default `false`. En true, un dictado no vacío llama a `submit()` después de escribir el texto. El default evita que un reconocimiento malo dispare tools.
+
+El JSON que llega al navegador es el modo (`browser` o `upload`), el idioma (solo hace falta en `browser`), `max_seconds`, `auto_submit` y los MIME preferidos. No lleva nombre de proveedor, modelo ni key. Así el DOM no dice si detrás hay Grok u OpenAI.
+
+Subida: acción Livewire `transcribe` con `WithFileUploads`, no una route nueva del paquete. El widget vive dentro de Filament, y el guard del panel no es necesariamente el `auth` por defecto: una route con middleware `auth` respondería 401 a quien sí puede usar el chat. La acción corre en el mismo request autenticado que `ask()`. El trait abre el upload temporal de Livewire en ese componente; `transcribe` sale antes de leer el archivo si la voz está apagada, si el driver es `browser`, si `canAccess()` es false o si el MIME no está en la lista.
+
+### 2.8 Seguridad
+
+- `canAccess()` y usuario no nulo, igual que el chat. Un invitado no llega a la acción.
+- Rate limit propio `ai-chat:voice:{id}`, default 10 por minuto, aparte de los 20 mensajes del chat.
+- Tope 2 MB y MIME allowlist (`audio/webm`, `audio/ogg`, `audio/mp4`, `audio/mpeg`, `audio/wav`, `audio/x-m4a` y variantes con `codecs`). El resto se rechaza sin llamar al proveedor.
+- El temporal se borra en un `finally`, también si la transcripción lanza. No se copia a `storage` permanente ni a `ai_chat_turn_logs`.
+- La API key solo existe en el servidor. Un 401 de xAI no devuelve el body. El config publicado debe seguir leyendo `env('XAI_API_KEY')`: pegar la key en el PHP y commitearlo es un leak de la app, y la guía tiene que decirlo.
+- `auto_submit` no lo puede activar el navegador: es config, no un parámetro del request.
+- La prop `voice` del mount no puede pasar de false a true.
+
+### 2.9 Fases
+
+#### V1 — contrato, manager y driver `browser`
+
+El bloque de config de 2.3 entra entero, para no volver a cambiar la forma en V2. Solo funciona `browser`.
+
+Si `enabled` es true y el driver es `laravel-ai`, `xai` u otro nombre aún no implementado, el micrófono no se muestra y se reporta. No se disfraza de Web Speech.
+
+Archivos: `config/ai-chat.php`, `src/Contracts/SpeechToTextDriver.php`, DTOs `SpeechAudio` y `SpeechTranscript`, `src/Speech/SpeechToTextManager.php`, driver `browser`, vista, CSS, props `#[Locked]` en el widget, `INTEGRATION.md`, guideline y skill. El stub del agente no cambia. `ask()` no cambia. Sin migración.
+
+Tests:
+
+- Defaults: `enabled` false, `driver` browser, `language` es-CL, `auto_submit` false, modelo xAI `grok-voice-transcribe-2.0`.
+- Con el default, el HTML no tiene botón ni `SpeechRecognition`.
+- Con `enabled` true y driver `browser`, el botón está y el `lang` es `es-CL`. No hay URL de upload ni key en el HTML.
+- `panels` que no incluye el panel actual, o `voice: false` en el mount, ocultan el botón.
+- Driver `xai` con la voz encendida, en V1, no muestra el botón.
+- Invitado sin panel. `submit()` / `ask()` iguales.
+- `extend()` resuelve un driver falso. Un nombre desconocido no resuelve `browser`.
+
+El micrófono de verdad se prueba en el workbench, en Chrome y Safari. Pest no abre navegador.
+
+#### V2 — `laravel-ai` y `xai`
+
+Misma UI de grabar/detener/error, más la acción `transcribe`. Los dos drivers de servidor salen juntos: comparten grabación, límites y borrado; solo cambia quién recibe los bytes.
+
+Tests:
+
+- `Transcription::fake()`: un webm válido deja el texto en `prompt` y no llama a xAI. Aserción del idioma `es` cuando el builder del minor lo exponga. `preventStrayTranscription` si existe (el de audio tiene `preventStrayAudio`; confirmar el de transcripción).
+- `Http::fake()` para xAI: URL `https://api.x.ai/v1/stt`, Bearer, `model`, `language=es` cuando la config dice `es-CL`, `format=true`, `keyterm` repetido, `file` como último part. La respuesta usa `text`.
+- Sin `XAI_API_KEY` ni key en `config/ai.php`, no hay request.
+- Driver `browser`: `Http::assertNothingSent()` y `Transcription::assertNothingGenerated()` aunque alguien invoque `transcribe` en el componente.
+- Archivo grande o MIME `text/plain`: validación, nada de red, temporal borrado.
+- Rate limit. Usuario sin acceso. `auto_submit` false no llama a `ask()`.
+- `format` no se envía si no hay idioma.
+
+#### V3 — WebSocket xAI
+
+No planificar archivos hasta que V2 esté en uso. Ver 2.6.
+
+### 2.10 Apps que ya están en producción
+
+`composer update cbstian/laravel-ai-chat-widget`. No hay `migrate`. El chat se ve igual mientras `AI_CHAT_VOICE` no exista o sea false.
+
+Quien publicó `config/ai-chat.php` copia el bloque `voice` solo cuando lo va a encender. Hasta entonces el default en código lo deja apagado.
+
+No hace falta `ai-chat:install`. No se toca `app/Ai`. La key de xAI, si ya está en el `.env` de `laravel/ai`, se reutiliza; no hace falta otra.
 
 ---
 
@@ -345,24 +488,32 @@ Según `VERSIONING.md` y el estado `0.x`:
 | Cambio | Tipo |
 | --- | --- |
 | Claves `voice` y `mcp` con default apagado | MINOR |
+| `SpeechToTextDriver`, `SpeechAudio` y `SpeechTranscript` | MINOR. Pasan a ser API pública. Conviene cerrar los métodos en V1 (`runsInBrowser`, `transcribe`) para no añadir otro en V2: un método nuevo rompe los drivers que la app haya registrado |
 | `suggest` de `laravel/mcp` | MINOR, no afecta al resolve de quien no lo pide |
 | `require-dev` de `laravel/mcp` | no es release de runtime; vigilar CI `prefer-lowest` |
-| Contrato nuevo opcional, sin tocar `ChatDriver` | MINOR |
+| Contrato nuevo opcional de aprobación MCP, sin tocar `ChatDriver` | MINOR |
 | Método nuevo en `ChatDriver` | evitarlo |
 | Migración | no hace falta. Si algún día se guarda el toggle por usuario, columna nueva = MINOR; no puede ser obligatoria para arrancar |
-| Subir el mínimo de `laravel/ai` dentro de `^1.0` | no hace falta si el catálogo se protege con `method_exists` / `class_exists` |
+| Subir el mínimo de `laravel/ai` dentro de `^1.0` | no hace falta. El driver `laravel-ai` usa `Transcription`, presente en `^1.0`. El driver `xai` es HTTP propio y no depende de un gateway del SDK |
 
 `CHANGELOG.md` (Unreleased) se actualiza en el PR que implemente cada fase, no en este plan.
 
-El matrix del paquete sigue PHP 8.3+, Laravel 12/13, Livewire 4, `laravel/ai` ^1.0. La voz en el navegador no depende de eso. La transcripción de servidor y el wrapper MCP dependen de que el minor de `laravel/ai` instalado en cada app tenga `Transcription` y `McpServerTool`. Con el constraint actual, una app en `1.0.0` ya debería tenerlos (llegaron antes del 1.0). Confirmarlo en la app más antigua antes de M2, porque la aprobación de tools es de la serie 0.10 y el wrapper puede haber ganado `needsApproval()` después.
+El matrix del paquete sigue PHP 8.3+, Laravel 12/13, Livewire 4, `laravel/ai` ^1.0. El driver `browser` no llama al SDK. El driver `laravel-ai` necesita `Transcription` en ese rango. El wrapper MCP necesita `McpServerTool`. Confirmarlo en la app más antigua antes de M2, porque la aprobación de tools es de la serie 0.10 y el wrapper puede haber ganado `needsApproval()` después. El driver `xai` no pide un paquete nuevo.
 
 ---
 
 ## 5. Riesgos
 
-- **Audio a terceros sin que se note.** Web Speech en Chrome no es local. Si una app maneja datos sensibles, V1 puede ser inaceptable y hay que ir a V2 con el provider que ya tengan contrato.
-- **Firefox.** Sin fallback, el botón no aparece. No es un error de Laravel.
-- **Config publicada.** `mergeConfigFrom` no rellena un `config/ai-chat.php` ya copiado. Olvidar el default en código encendería la función con `null` mal interpretado, o lanzaría un error al leer `voice.locale`. Siempre `data_get` con default.
+- **Audio a terceros.** `browser` en Chrome manda el audio a Google. `laravel-ai` y `xai` lo mandan al proveedor elegido. La UI tiene que decir cuál de los dos mundos está activo, sin nombrar la key.
+- **Driver equivocado por silencio.** Si V1 viera `driver=xai` y usara Web Speech, la app creería que transcribe Grok. Un driver no implementado o desconocido deja el micrófono oculto.
+- **Firefox y Safari viejo.** Sin `SpeechRecognition` el driver `browser` no muestra botón. Sin `MediaRecorder` los drivers de servidor tampoco. No es un fallo de PHP.
+- **`es-CL` en xAI.** No es un código regional documentado (`es` / `es-ES`). Mandarlo crudo puede sesgar mal o rechazar el request. El mapeo a `es` es parte del driver, no un detalle de la vista.
+- **Orden del multipart.** Un `keyterm` después de `file`, o un array PHP `keyterm[0]`, no sesga el modelo. Hay que afirmar el orden en el test de `Http::fake`.
+- **`format=true` sin idioma.** xAI responde 400. El driver no debe poder llegar a esa combinación.
+- **WebM contra un provider de `laravel/ai`.** El paquete no transcodifica. Si Gemini u otro rechaza el contenedor de Chrome, falla esa toma; la salida es cambiar provider, no añadir ffmpeg.
+- **Key en el front o en el config commiteado.** El Blade solo recibe el modo de UI. `XAI_API_KEY` se lee con `env()` o desde `config/ai.php`.
+- **Temporales de Livewire.** El `finally` tiene que borrar el archivo también cuando el provider lanza. No dejar el audio en el disco de uploads.
+- **Config publicada.** `mergeConfigFrom` no rellena un `config/ai-chat.php` ya copiado. Olvidar el default en código encendería la función con `null` mal interpretado. Siempre `data_get` con default. `enabled` ausente es false.
 - **Autoenvío del dictado.** Un reconocimiento malo dispararía tools MCP. Por eso el texto pasa por el textarea.
 - **Allowlist amplia.** La tentación va a ser registrar el servidor entero. Una tool sin `user()->can()` quedaría al alcance de quien ya entra al chat.
 - **Pausa invisible.** Conectar una tool `Approvable` antes de M2 deja el turno en `paused` y el widget lo esconde. La persona ve que «no pasó nada» y el modelo tampoco sigue.
@@ -376,18 +527,24 @@ El matrix del paquete sigue PHP 8.3+, Laravel 12/13, Livewire 4, `laravel/ai` ^1
 
 ---
 
-## 6. Decisiones que tiene que tomar el autor
+## 6. Decisiones
 
-1. ¿El dictado solo rellena el textarea (recomendado) o hay un modo que envía al soltar?
-2. ¿`es-CL` fijo de paquete, o cada app lo setea y con eso basta? ¿Hace falta un locale por usuario?
-3. ¿Las apps de producción pueden aceptar que Chrome mande el audio a Google? Si no, V1 no se enciende en esas apps y V2 pasa a ser el único camino.
-4. ¿Firefox (escritorio) es un requisito de las apps actuales? Define si V2 entra en el mismo release que V1.
-5. ¿MCP de la primera entrega es solo tools de lectura de la propia app, o también un cliente con nombre ya registrado (`Mcp::client('github')`)?
-6. ¿Quién arma la allowlist: una lista de clases en `config/ai-chat.php` (recomendado) o un método en el servidor MCP de cada app?
-7. ¿Se puede esperar a M2 antes de exponer cualquier tool que no sea de solo lectura? Recomendación: sí.
-8. ¿Recursos y prompts entran en el alcance de este trabajo o se quedan fuera hasta que una app los pida?
-9. ¿El toggle por panel Filament hace falta en V1, o el flag global y el argumento `voice` del componente alcanzan?
-10. ¿Estas fases salen como minors `0.x` separados (voz, luego MCP, luego confirmación) o se espera a juntarlas? Separadas reducen el riesgo en las apps que ya están en `dev-master`.
+Cerrado para la voz:
+
+1. STT por drivers. `browser`, `laravel-ai` y `xai`. Manager extensible. Todo apagado hasta que `voice.enabled` sea true.
+2. El texto rellena el textarea. `voice.auto_submit` existe y default false.
+3. Un idioma de config, default `es-CL`, mapeado por driver. No hace falta un locale por usuario en estas fases.
+4. El WebSocket de xAI no entra en V1 ni en V2.
+5. La subida va por una acción Livewire, no por una route nueva, por el guard de Filament.
+
+Sigue abierto:
+
+1. ¿MCP de la primera entrega es solo tools de lectura de la propia app, o también un cliente con nombre ya registrado (`Mcp::client('github')`)?
+2. ¿Quién arma la allowlist: una lista de clases en `config/ai-chat.php` (recomendado) o un método en el servidor MCP de cada app?
+3. ¿Se puede esperar a M2 antes de exponer cualquier tool que no sea de solo lectura? Recomendación: sí.
+4. ¿Recursos y prompts entran en el alcance de este trabajo o se quedan fuera hasta que una app los pida?
+5. ¿El filtro `voice.panels` hace falta en V1, o el flag global y el argumento `voice` del componente alcanzan?
+6. ¿V1, V2 y las fases MCP salen como minors `0.x` separados? Separadas se revierten mejor en las apps que siguen `dev-master`.
 
 ---
 
@@ -397,15 +554,16 @@ Tamaño del cambio, no calendario. Un PR por fase, en este orden.
 
 | Fase | Tamaño | Qué se toca | Depende de |
 | --- | --- | --- | --- |
-| V1 Voz en el navegador | Pequeño | Vista, CSS, bloque de config, props del componente, tests de render, tres docs de integración | Nada de `laravel/ai` ni de MCP |
-| V2 Transcripción de servidor | Medio | Upload Livewire, límites, borrado, `Transcription::fake()`, config de provider | V1, y un minor de `laravel/ai` con `Transcription` (ya cubierto por `^1.0`) |
+| V1 Driver `browser` | Pequeño, tirando a medio | Contrato, DTOs, manager, config completa, Alpine de escucha, tests de render y de `extend()`. Sin red | Nada de MCP. No llama a `Transcription` |
+| V2 Drivers `laravel-ai` y `xai` | Medio, tirando a grande | `MediaRecorder`, acción `transcribe`, borrado, MIME, `Transcription::fake()`, `Http::fake()` con el orden del multipart, mapeo `es-CL` → `es` | V1. `Transcription` ya entra en `laravel/ai` ^1.0. xAI es HTTP, sin paquete nuevo |
+| V3 WebSocket xAI | Grande, diferida | Proxy que sostenga el socket, encoder Opus o PCM en el navegador, key solo en el servidor | V2 en uso, y un caso que el REST no cubra |
 | M1 Catálogo MCP | Medio | Clase nueva, `suggest`, `require-dev`, stub comentado, tests del catálogo, docs. Sin cambio de UI | `laravel/mcp` solo en dev y en las apps que lo enciendan |
 | M2 Confirmación en el widget | Grande | Contrato opcional, estado Livewire, evento de pausa, `Decisions`, historial `paused`, CSS de la tarjeta de confirmación, tests de stream | M1 si la confirmación es para tools MCP; el mecanismo también serviría para tools `Approvable` propias de la app |
 | M3 Recursos y prompts | Medio | Tools nuevas opt-in y tests con el servidor MCP de fixture | M1 |
 
-Orden sugerido: **V1, después M1, después M2, y V2 solo si el navegador no alcanza.** M3 cuando haya un caso real.
+Orden sugerido: **V1, V2, y en paralelo o después M1 y M2.** V3 no se agenda. M3 cuando haya un caso real.
 
-V1 y M1 se pueden revisar en paralelo porque no comparten archivos de lógica, pero no hace falta mezclarlos en un solo release: las apps en VCS se mueven con `dev-master` y un release pequeño se revierte mejor.
+V1 y M1 casi no comparten archivos. Aun así, un release por fase: las apps en VCS se mueven con `dev-master` y un cambio chico se revierte mejor. V2 no debe publicarse antes de que el contrato de V1 esté cerrado, porque un driver de la app implementa esa interfaz.
 
 ---
 
@@ -416,4 +574,7 @@ V1 y M1 se pueden revisar en paralelo porque no comparten archivos de lógica, p
 - `laravel/ai` 1.3.0 sugiere `laravel/mcp` ^1.0 y envuelve tools de cliente y de servidor (`src/Tools/McpTool.php`, `src/Tools/McpServerTool.php` en la rama 1.x).
 - `Laravel\Mcp\Request::user()` usa el user resolver de `auth` (rama main de `laravel/mcp`, 2026-11-02).
 - Web Speech: MDN `SpeechRecognition`; soporte parcial en Chrome y Safari, Firefox desactivado (Can I use, 2026). El audio de Chrome se procesa en un servicio de red salvo `processLocally`.
+- xAI Speech to Text (REST, formatos, `language`, `format`, `keyterm`, campo `file` al final): https://docs.x.ai/developers/model-capabilities/audio/speech-to-text
+- xAI `POST /v1/stt` y WebSocket `wss://api.x.ai/v1/stt`: https://docs.x.ai/developers/rest-api-reference/inference/speech-to-text
+- Matriz de capacidades de `laravel/ai` (STT sin xAI): https://laravel.com/docs/ai-sdk
 - Política interna: `VERSIONING.md`, `docs/INTEGRATION.md`, `AGENTS.md`.
