@@ -35,6 +35,7 @@
         <h1>Workbench — laravel-ai-chat-widget</h1>
         <p>Sesión de prueba: {{ auth()->user()?->email }}.</p>
         <p>Abre el chat con el botón flotante y envía un mensaje. La respuesta la genera un agente local, sin proveedor real.</p>
+        <p>El micrófono sale porque este workbench enciende <code>voice.enabled</code>. El driver es <code>AI_CHAT_VOICE_DRIVER</code> (<code>browser</code>, <code>laravel-ai</code> o <code>xai</code>). El texto queda en el campo para revisarlo antes de enviar.</p>
     </main>
 
     @livewire('ai-chat-widget')

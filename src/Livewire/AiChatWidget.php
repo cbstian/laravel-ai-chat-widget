@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Cbstian\AiChat\Livewire;
 
 use Cbstian\AiChat\Contracts\ChatDriver;
+use Cbstian\AiChat\Speech\SpeechToTextManager;
+use Cbstian\AiChat\Speech\SpeechUpload;
+use Cbstian\AiChat\Speech\VoiceSettings;
+use Cbstian\AiChat\Speech\VoiceTranscriptionException;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
@@ -12,15 +16,20 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use InvalidArgumentException;
 use Laravel\Ai\Streaming\Events\StreamStart;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\ToolCall;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 use Throwable;
 
 class AiChatWidget extends Component
 {
+    use WithFileUploads;
+
     public bool $open = false;
 
     public bool $expanded = false;
@@ -44,11 +53,20 @@ class AiChatWidget extends Component
     public array $context = [];
 
     /**
+     * La página solo puede apagar el dictado. true no enciende la función si la config está en false.
+     */
+    #[Locked]
+    public bool $voice = true;
+
+    public ?TemporaryUploadedFile $audio = null;
+
+    /**
      * @param  array<string, mixed>  $context
      */
-    public function mount(array $context = []): void
+    public function mount(array $context = [], mixed $voice = true): void
     {
         $this->context = $context;
+        $this->voice = $voice !== false && $voice !== 0 && $voice !== '0' && $voice !== 'false';
 
         $driver = app(ChatDriver::class);
         $user = Auth::user();
@@ -149,6 +167,15 @@ class AiChatWidget extends Component
             $this->error = $exception->getMessage() !== ''
                 ? $exception->getMessage()
                 : 'No se pudo completar la respuesta.';
+        }
+    }
+
+    public function transcribe(): void
+    {
+        try {
+            $this->fillPromptFromAudio();
+        } finally {
+            $this->discardAudio();
         }
     }
 
@@ -269,13 +296,121 @@ class AiChatWidget extends Component
 
     public function render(): View
     {
+        $accessible = $this->canAccess();
+        $voice = $this->voicePresentation($accessible);
+
         return view('ai-chat::livewire.widget', [
             'title' => (string) config('ai-chat.title'),
             'subtitle' => (string) config('ai-chat.subtitle'),
             'colors' => (array) config('ai-chat.colors', []),
             'userName' => $this->userDisplayName(),
-            'accessible' => $this->canAccess(),
+            'accessible' => $accessible,
+            'voiceUi' => $voice['payload'],
+            'voiceNotice' => $voice['notice'],
         ]);
+    }
+
+    /**
+     * @return array{payload: array<string, mixed>|null, notice: string|null}
+     */
+    private function voicePresentation(bool $accessible): array
+    {
+        if (! $accessible || ! $this->dictationAllowed()) {
+            return ['payload' => null, 'notice' => null];
+        }
+
+        try {
+            $driver = app(SpeechToTextManager::class)->driver();
+        } catch (InvalidArgumentException) {
+            return [
+                'payload' => null,
+                'notice' => 'El dictado por voz no está disponible con el driver configurado.',
+            ];
+        }
+
+        return [
+            'payload' => app(VoiceSettings::class)->clientPayload($driver),
+            'notice' => null,
+        ];
+    }
+
+    private function dictationAllowed(): bool
+    {
+        if (! $this->voice) {
+            return false;
+        }
+
+        $settings = app(VoiceSettings::class);
+
+        return $settings->enabled() && $settings->allowsCurrentPanel();
+    }
+
+    private function fillPromptFromAudio(): void
+    {
+        $user = Auth::user();
+
+        if (! $user instanceof Authenticatable || ! $this->canAccess() || ! $this->dictationAllowed()) {
+            return;
+        }
+
+        try {
+            $driver = app(SpeechToTextManager::class)->driver();
+        } catch (InvalidArgumentException) {
+            $this->error = 'El dictado por voz no está disponible con el driver configurado.';
+
+            return;
+        }
+
+        if ($driver->runsInBrowser() || ! $this->audio instanceof TemporaryUploadedFile) {
+            return;
+        }
+
+        try {
+            $settings = app(VoiceSettings::class);
+            $speech = app(SpeechUpload::class)->prepare($this->audio, $settings->maxKilobytes());
+            $settings->consumeRateLimit($user);
+            $transcript = $driver->transcribe($speech);
+        } catch (VoiceTranscriptionException $exception) {
+            $this->error = $exception->getMessage();
+
+            return;
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->error = 'No se pudo transcribir.';
+
+            return;
+        }
+
+        $text = trim($transcript->text);
+
+        if ($text === '') {
+            $this->error = 'No se reconoció ninguna palabra.';
+
+            return;
+        }
+
+        $current = trim($this->prompt);
+        $this->prompt = $current === '' ? $text : $current.' '.$text;
+        $this->error = null;
+
+        if (app(VoiceSettings::class)->autoSubmit()) {
+            $this->submit();
+        }
+    }
+
+    private function discardAudio(): void
+    {
+        $audio = $this->audio;
+
+        if ($audio instanceof TemporaryUploadedFile) {
+            try {
+                $audio->delete();
+            } catch (Throwable) {
+                // El temporal ya no está.
+            }
+        }
+
+        $this->audio = null;
     }
 
     protected function canAccess(): bool

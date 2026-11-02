@@ -42,8 +42,10 @@ class WorkbenchServiceProvider extends ServiceProvider
             'auth.providers.users.model' => User::class,
             'cache.default' => 'array',
             'ai.default' => 'openai',
-            'ai.providers.openai.key' => 'workbench',
+            'ai.providers.openai.key' => env('OPENAI_API_KEY') ?: 'workbench',
             'ai.conversations.generate_title' => false,
+            // El paquete deja la voz apagada. El workbench la enciende para probar el micrófono.
+            'ai-chat.voice.enabled' => filter_var(env('AI_CHAT_VOICE', true), FILTER_VALIDATE_BOOLEAN),
             'ai-chat.enabled' => true,
             'ai-chat.persist' => true,
             'ai-chat.verbose_logs' => true,
@@ -53,6 +55,21 @@ class WorkbenchServiceProvider extends ServiceProvider
             'ai-chat.title' => 'Asistente IA',
             'ai-chat.subtitle' => 'Prueba local de Workbench',
         ]);
+
+        foreach ([
+            'groq' => 'GROQ_API_KEY',
+            'gemini' => 'GEMINI_API_KEY',
+            'mistral' => 'MISTRAL_API_KEY',
+            'eleven' => 'ELEVENLABS_API_KEY',
+            'openrouter' => 'OPENROUTER_API_KEY',
+            'xai' => 'XAI_API_KEY',
+        ] as $provider => $variable) {
+            $value = env($variable);
+
+            if (is_string($value) && $value !== '') {
+                config(["ai.providers.{$provider}.key" => $value]);
+            }
+        }
     }
 
     protected function migrationsAlreadyPublished(string $path): bool

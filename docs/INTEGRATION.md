@@ -29,7 +29,7 @@ Con Laravel Boost, `php artisan boost:install` incorpora la guideline del paquet
 | Comando | `php artisan ai-chat:install` |
 | Componente Livewire | `ai-chat-widget` |
 | Directiva de estilos | `@aiChatStyles` |
-| Contratos | `ResolvesChatAgent`, `ResolvesChatAccess`, `ChatDriver` |
+| Contratos | `ResolvesChatAgent`, `ResolvesChatAccess`, `ChatDriver`, `SpeechToTextDriver` |
 
 No está en Packagist todavía. Hasta entonces, el `composer.json` de la app necesita el repositorio VCS o un `path`.
 
@@ -142,7 +142,51 @@ Cada clave está comentada en `config/ai-chat.php`. Resumen operativo:
 | `documents.max_bytes` | `AI_CHAT_DOCUMENTS_MAX_BYTES` | Tope al leer un archivo |
 | `documents.max_files` | `AI_CHAT_DOCUMENTS_MAX_FILES` | Tope del listado |
 
-`mergeConfigFrom` no fusiona arrays anidados. Si publicas `config/ai-chat.php`, edita ese archivo: una clave `documents` en un service provider reemplaza el array entero.
+`mergeConfigFrom` no fusiona arrays anidados. Si publicas `config/ai-chat.php`, edita ese archivo: una clave `documents` en un service provider reemplaza el array entero. Un config publicado viejo no trae `voice`: el widget lee `enabled` con default `false`, así que el micrófono no aparece hasta que copies el bloque y lo enciendas.
+
+## Dictado por voz
+
+Opcional. `AI_CHAT_VOICE=false` (el default) gana aunque `AI_CHAT_VOICE_DRIVER` tenga valor. No hay migración ni método nuevo en `ChatDriver`. Para apagarlo en una pantalla: `@livewire('ai-chat-widget', ['voice' => false])`. Ese argumento no puede encender la función.
+
+| Driver | Dónde transcribe | Qué configurar |
+|---|---|---|
+| `browser` | Web Speech API. Chrome, Edge y Safari. Firefox de escritorio no. En Chrome el audio va al servicio de Google | Solo `AI_CHAT_VOICE=true`. Es el driver por defecto al encender |
+| `laravel-ai` | El navegador graba y Laravel llama a `Transcription` | `AI_CHAT_VOICE_DRIVER=laravel-ai` y `AI_CHAT_VOICE_PROVIDER` con uno que transcriba: `openai`, `openai-compatible`, `groq`, `gemini`, `mistral`, `eleven`, `openrouter`. La key es la de `config/ai.php` de ese provider. Si omites el provider, solo se usa `ai.default` cuando ese default transcribe |
+| `xai` | El mismo audio, `POST https://api.x.ai/v1/stt` | `AI_CHAT_VOICE_DRIVER=xai` y `XAI_API_KEY` (o la key ya puesta en `config/ai.php` de `laravel/ai`). No uses el provider `xai` de `laravel/ai` para STT: ese SDK no transcribe con xAI |
+
+```env
+AI_CHAT_VOICE=true
+AI_CHAT_VOICE_DRIVER=browser
+AI_CHAT_VOICE_LANGUAGE=es-CL
+AI_CHAT_VOICE_AUTO_SUBMIT=false
+AI_CHAT_VOICE_PROVIDER=
+AI_CHAT_VOICE_MODEL=
+AI_CHAT_VOICE_MAX_SECONDS=60
+AI_CHAT_VOICE_MAX_KB=2048
+AI_CHAT_VOICE_RATE_LIMIT=10
+XAI_API_KEY=
+```
+
+`AI_CHAT_VOICE_LANGUAGE` es BCP 47 (`es-CL` por defecto). El navegador lo usa tal cual. `laravel-ai` manda el subtag primario (`es`). xAI mapea `es-CL` y `es-MX` a `es`, y deja `es-ES` si lo configuraste. `format` de xAI no se envía sin idioma.
+
+El texto se concatena al textarea. Con `AI_CHAT_VOICE_AUTO_SUBMIT=true` un dictado no vacío llama a `submit()`. El navegador no puede activar ese flag. Mientras graba o transcribe, enviar queda deshabilitado.
+
+La subida es la acción Livewire `transcribe` del mismo componente (no una route nueva, para no chocar con el guard de Filament). Tope 60 segundos y 2 MB. El temporal se borra al terminar, también si el provider falla. No se guarda en `ai_chat_*`. Rate limit propio `ai-chat:voice:{id}`, 10 por minuto. `voice.panels` es una lista de ids de panel Filament; `null` no filtra, y fuera de Filament no aplica.
+
+La vista solo recibe el modo (`browser` o `upload`), el idioma del navegador, los segundos y los MIME. No recibe provider, modelo ni key. No pegues `XAI_API_KEY` dentro de `config/ai-chat.php` si ese archivo se commitea: déjala en `.env`.
+
+Otro proveedor, sin fork:
+
+```php
+app(\Cbstian\AiChat\Speech\SpeechToTextManager::class)->extend(
+    'acme',
+    fn () => new \App\Speech\AcmeSpeechToTextDriver,
+);
+```
+
+La clase implementa `Cbstian\AiChat\Contracts\SpeechToTextDriver` (`runsInBrowser()` y `transcribe()`). Un nombre desconocido no cae en `browser`: el micrófono no se muestra. Un driver de navegador propio no tiene gancho JS en esta versión.
+
+`voice.user_can_disable` (default `true`) deja que la persona oculte el botón en `localStorage` (`pc-ai-chat-voice`). No cambia el driver ni enciende la función.
 
 ## Agente y tools del LLM
 

@@ -49,4 +49,5 @@ El agente generado ya registra `Cbstian\AiChat\Tools\ListMarkdownDocuments` y `R
 - `AI_CHAT_PERSIST=false` solo apaga las tablas `ai_chat_*`. El historial del chat sigue en las tablas de laravel/ai.
 - El agente debe usar `RemembersConversations` y exponer `stream()`.
 - `fab_icon` y `fab_icon_svg` no cambian la UI.
+- El dictado (`AI_CHAT_VOICE`) está apagado por defecto. No lo enciendas al instalar. `browser` no gasta API; `laravel-ai` necesita `AI_CHAT_VOICE_PROVIDER` con STT; `xai` usa `XAI_API_KEY` solo en el servidor. No añadas métodos a `ChatDriver`. Un `config/ai-chat.php` ya publicado no gana claves nuevas: sin el bloque `voice`, sigue apagado.
 @endverbatim
