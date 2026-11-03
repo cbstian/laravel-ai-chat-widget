@@ -12,6 +12,10 @@
         --pc-ai-panel-bg: {{ $colors['panel_bg'] ?? '#f9fafb' }};
     "
 >
+    @if (is_array($voiceUi))
+        @include('ai-chat::livewire.voice-script')
+    @endif
+
     @if ($open)
         <div class="pc-ai-chat__panel {{ $expanded ? 'pc-ai-chat__panel--expanded' : 'pc-ai-chat__panel--compact' }}" wire:key="pc-ai-panel-{{ $expanded ? 'exp' : 'cmp' }}">
             <header class="pc-ai-chat__header">
@@ -85,15 +89,52 @@
                 @endif
             </div>
 
-            <form class="pc-ai-chat__form" wire:submit="submit">
+            @if (is_string($voiceNotice) && $voiceNotice !== '')
+                <p class="pc-ai-chat__voice-note">{{ $voiceNotice }}</p>
+            @endif
+
+            <form
+                class="pc-ai-chat__form"
+                wire:submit="submit"
+                @if (is_array($voiceUi)) x-data="pcAiChatVoice(@js($voiceUi))" @endif
+            >
                 <textarea
                     class="pc-ai-chat__input"
                     rows="2"
                     wire:model="prompt"
-                    x-on:keydown.enter="if ($event.shiftKey) return; $event.preventDefault(); $wire.submit()"
+                    x-ref="input"
+                    x-on:keydown.enter="if ($event.shiftKey) return; $event.preventDefault(); @if (is_array($voiceUi)) if (status === 'requesting' || status === 'recording' || status === 'transcribing') return; @endif $wire.submit()"
                     placeholder="Escribe un mensaje… (Enter envía)"
                 ></textarea>
-                <button type="submit" class="pc-ai-chat__send" title="Enviar">➤</button>
+                @if (is_array($voiceUi))
+                    <p class="pc-ai-chat__voice-status" x-show="message !== ''" x-text="message"></p>
+                    <button
+                        type="button"
+                        class="pc-ai-chat__mic"
+                        x-cloak
+                        x-show="isSupported()"
+                        x-on:click="toggle()"
+                        x-bind:class="{ 'pc-ai-chat__mic--recording': status === 'recording', 'pc-ai-chat__mic--busy': status === 'transcribing' || status === 'requesting' }"
+                        x-bind:disabled="status === 'transcribing'"
+                        x-bind:aria-label="label()"
+                        x-bind:title="label()"
+                        x-bind:aria-pressed="status === 'recording'"
+                        x-bind:aria-busy="status === 'transcribing' || status === 'requesting'"
+                    >
+                        <svg class="pc-ai-chat__glyph pc-ai-chat__mic-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="9" y="3" width="6" height="11" rx="3" />
+                            <path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8" />
+                        </svg>
+                        <span class="pc-ai-chat__mic-spin" x-show="status === 'transcribing' || status === 'requesting'" aria-hidden="true"></span>
+                    </button>
+                    <span class="pc-ai-chat__sr" aria-live="polite" x-text="label()"></span>
+                @endif
+                <button
+                    type="submit"
+                    class="pc-ai-chat__send"
+                    title="Enviar"
+                    @if (is_array($voiceUi)) x-bind:disabled="status === 'requesting' || status === 'recording' || status === 'transcribing'" @endif
+                >➤</button>
             </form>
         </div>
     @endif

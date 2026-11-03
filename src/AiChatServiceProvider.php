@@ -11,6 +11,9 @@ use Cbstian\AiChat\Contracts\ResolvesChatAgent;
 use Cbstian\AiChat\Drivers\AgentChatDriver;
 use Cbstian\AiChat\Livewire\AiChatWidget;
 use Cbstian\AiChat\Mcp\McpToolCatalog;
+use Cbstian\AiChat\Speech\FilamentPanelId;
+use Cbstian\AiChat\Speech\SpeechToTextManager;
+use Cbstian\AiChat\Speech\VoiceSettings;
 use Filament\Facades\Filament;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\Foundation\Application;
@@ -85,6 +88,13 @@ class AiChatServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(McpToolCatalog::class);
+
+        $this->app->singleton(SpeechToTextManager::class, function (Application $app): SpeechToTextManager {
+            return new SpeechToTextManager($app);
+        });
+
+        $this->app->singleton(FilamentPanelId::class);
+        $this->app->singleton(VoiceSettings::class);
     }
 
     public function boot(): void

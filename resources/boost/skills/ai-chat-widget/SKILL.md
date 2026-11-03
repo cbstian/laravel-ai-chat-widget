@@ -28,7 +28,7 @@ Sigue `docs/INTEGRATION.md`. Las reglas de abajo son las que más se saltan.
 - Provider con auto-discovery: `Cbstian\AiChat\AiChatServiceProvider`
 - Componente: `ai-chat-widget`
 - Directiva: `@aiChatStyles`
-- Contratos de la app: `ResolvesChatAgent`, `ResolvesChatAccess`. No añadas métodos a `ChatDriver`. `McpToolCatalog` es opcional.
+- Contratos de la app: `ResolvesChatAgent`, `ResolvesChatAccess`. `McpToolCatalog` es opcional. `SpeechToTextDriver` solo si la app registra un driver de voz propio. No añadas métodos a `ChatDriver`.
 
 Si no está en Packagist, añade el repositorio VCS `https://github.com/cbstian/laravel-ai-chat-widget` y requiere `dev-master`, o un repositorio `path` local. Para traer commits nuevos de VCS: `composer update cbstian/laravel-ai-chat-widget` (si no baja el `master` actual, `composer clear-cache` y `--prefer-source`). Con `path`, `git pull` en el clone. Ver README «Actualizar (VCS)».
 
@@ -76,3 +76,4 @@ Documentos que el LLM puede leer: archivos `.md` en `resources/ai/chat` (ahí qu
 - `fab_icon` no cambia el botón.
 - Un mensaje real usa el provider configurado. Una pregunta sobre `welcome.md` debe llamar a las tools de Markdown.
 - No actives MCP al instalar. `AI_CHAT_MCP` ausente es false. Si la app lo pide: `composer require laravel/mcp:^1.1`, allowlist `ai-chat.mcp.tools` con clases `Laravel\Mcp\Server\Tool` marcadas `#[IsReadOnly]`, y el spread de `McpToolCatalog` en `tools()` del agente. No uses `Client::web` ni `Client::local` contra la misma app. Las tools de escritura no entran en esta versión. Un config publicado viejo no trae `mcp` y sigue apagado.
+- El dictado está apagado (`AI_CHAT_VOICE` ausente o `false`). No aparece el micrófono. Encenderlo es `AI_CHAT_VOICE=true` y, si no quieres Web Speech, `AI_CHAT_VOICE_DRIVER=laravel-ai` o `xai`. La key de xAI es `XAI_API_KEY` en `.env`, nunca en el HTML ni en un config commiteado. Un config publicado viejo no trae `voice`: el default en código sigue apagado. Si la voz está encendida, el micrófono se muestra a todo el mundo; no hay un toggle del usuario. Apagarlo en una pantalla es `@livewire('ai-chat-widget', ['voice' => false])`.

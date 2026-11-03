@@ -39,6 +39,12 @@ it('binds ChatDriver to AgentChatDriver by default', function () {
 });
 
 it('registers the install artisan command', function () {
+    // El config del skeleton lo leen todos los procesos de Pest en paralelo.
+    // Publicar ahí y borrarlo a mitad de otro boot tumba la suite.
+    $configDir = sys_get_temp_dir().'/ai-chat-config-'.bin2hex(random_bytes(4));
+    mkdir($configDir);
+    $this->app->useConfigPath($configDir);
+
     $migrations = database_path('migrations');
     $config = config_path('ai-chat.php');
     $welcome = resource_path('ai/chat/welcome.md');
@@ -77,6 +83,7 @@ it('registers the install artisan command', function () {
         }
 
         File::delete([$config, $welcome]);
+        File::deleteDirectory($configDir);
         File::deleteDirectory($assets);
         File::deleteDirectory(app_path('Ai'));
     }

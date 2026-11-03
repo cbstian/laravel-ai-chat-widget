@@ -108,6 +108,18 @@ OPENAI_API_KEY=
 
 Apagadas por defecto. Un `composer update` no cambia el chat. `laravel/mcp` es `suggest`, no `require`. Con `AI_CHAT_MCP=true` el catálogo entrega solo tools `#[IsReadOnly]` de la propia app, en proceso. Guía paso a paso (alta, upgrade, tool de ejemplo, opt-out): [docs/MCP.md](docs/MCP.md).
 
+### Dictado por voz
+
+Apagado por defecto. Un `composer update` no muestra el micrófono ni cambia el chat. Quien publicó `config/ai-chat.php` no recibe el bloque `voice` solo: el código lee `enabled` con default `false`.
+
+```env
+AI_CHAT_VOICE=true
+AI_CHAT_VOICE_DRIVER=browser
+AI_CHAT_VOICE_LANGUAGE=es-CL
+```
+
+`browser` usa Web Speech en el navegador (sin API key de la app). `laravel-ai` graba y transcribe con `Laravel\Ai\Transcription`. `xai` hace `POST https://api.x.ai/v1/stt`. La key no se renderiza. Si la voz está encendida, el micrófono se muestra; la persona no puede ocultarlo. Para probar un driver en el workbench, cámbialo en `workbench/.env` y vuelve a correr `composer serve` (ese comando es el que copia el `.env`). Guía: [docs/VOICE.md](docs/VOICE.md).
+
 ### Contrato del agente
 
 ```php
@@ -169,6 +181,7 @@ No actives el hook y además montes el componente: el chat saldría duplicado. H
 | Persistencia opcional de sesiones y logs | Autorización de negocio (salvo el contrato de acceso) |
 | Tools `ListMarkdownDocuments` y `ReadMarkdownDocument` | Lectura de archivos fuera de `ai-chat.documents.paths` |
 | Catálogo opcional de tools MCP de solo lectura de la propia app, apagado por defecto | Cliente MCP, HTTP, stdio o tools de escritura sin confirmación |
+| Dictado por voz opcional (`browser`, `laravel-ai`, `xai`), apagado por defecto | Enviar el audio a un provider sin que la app lo elija |
 
 ## Persistencia
 
