@@ -28,7 +28,7 @@ Sigue `docs/INTEGRATION.md`. Las reglas de abajo son las que más se saltan.
 - Provider con auto-discovery: `Cbstian\AiChat\AiChatServiceProvider`
 - Componente: `ai-chat-widget`
 - Directiva: `@aiChatStyles`
-- Contratos de la app: `ResolvesChatAgent`, `ResolvesChatAccess`
+- Contratos de la app: `ResolvesChatAgent`, `ResolvesChatAccess`. No añadas métodos a `ChatDriver`. `McpToolCatalog` es opcional.
 
 Si no está en Packagist, añade el repositorio VCS `https://github.com/cbstian/laravel-ai-chat-widget` y requiere `dev-master`, o un repositorio `path` local. Para traer commits nuevos de VCS: `composer update cbstian/laravel-ai-chat-widget` (si no baja el `master` actual, `composer clear-cache` y `--prefer-source`). Con `path`, `git pull` en el clone. Ver README «Actualizar (VCS)».
 
@@ -75,3 +75,4 @@ Documentos que el LLM puede leer: archivos `.md` en `resources/ai/chat` (ahí qu
 - `AI_CHAT_PERSIST=false` no elimina la memoria de `laravel/ai`.
 - `fab_icon` no cambia el botón.
 - Un mensaje real usa el provider configurado. Una pregunta sobre `welcome.md` debe llamar a las tools de Markdown.
+- No actives MCP al instalar. `AI_CHAT_MCP` ausente es false. Si la app lo pide: `composer require laravel/mcp:^1.1`, allowlist `ai-chat.mcp.tools` con clases `Laravel\Mcp\Server\Tool` marcadas `#[IsReadOnly]`, y el spread de `McpToolCatalog` en `tools()` del agente. No uses `Client::web` ni `Client::local` contra la misma app. Las tools de escritura no entran en esta versión. Un config publicado viejo no trae `mcp` y sigue apagado.

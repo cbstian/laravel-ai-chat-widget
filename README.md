@@ -104,6 +104,10 @@ OPENAI_API_KEY=
 
 `OPENAI_API_KEY` la consume `laravel/ai` (`config/ai.php`). Si `AI_CHAT_PROVIDER` queda vacío, se usa `config('ai.default')`. El agente generado ya registra `ListMarkdownDocuments` y `ReadMarkdownDocument`, que leen `.md` de `resources/ai/chat` y de los directorios en `AI_CHAT_DOCUMENT_PATHS`.
 
+### Tools MCP
+
+Apagadas por defecto. Un `composer update` no cambia el chat. `laravel/mcp` es `suggest`, no `require`. Con `AI_CHAT_MCP=true` el catálogo entrega solo tools `#[IsReadOnly]` listadas en `ai-chat.mcp.tools` (o las de un `Server` de la misma app en `mcp.servers`). Se ejecutan en el request, con el usuario logueado. Las de escritura se omiten hasta que el widget pueda confirmarlas. `@livewire('ai-chat-widget', ['mcp' => false])` las apaga en esa pantalla. Detalle en [docs/INTEGRATION.md](docs/INTEGRATION.md).
+
 ### Contrato del agente
 
 ```php
@@ -164,6 +168,7 @@ No actives el hook y además montes el componente: el chat saldría duplicado. H
 | CSS encapsulado (`.pc-ai-chat`) | API keys (van en `laravel/ai`) |
 | Persistencia opcional de sesiones y logs | Autorización de negocio (salvo el contrato de acceso) |
 | Tools `ListMarkdownDocuments` y `ReadMarkdownDocument` | Lectura de archivos fuera de `ai-chat.documents.paths` |
+| Catálogo opcional de tools MCP de solo lectura de la propia app, apagado por defecto | Cliente MCP, HTTP, stdio o tools de escritura sin confirmación |
 
 ## Persistencia
 

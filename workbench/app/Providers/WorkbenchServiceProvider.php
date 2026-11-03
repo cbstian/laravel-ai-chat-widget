@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Workbench\App\Ai\DemoChatAgentFactory;
 use Workbench\App\Http\Middleware\AuthenticateDemoUser;
+use Workbench\App\Mcp\Tools\CurrentUserTool;
 use Workbench\App\Models\User;
 
 class WorkbenchServiceProvider extends ServiceProvider
@@ -52,6 +53,11 @@ class WorkbenchServiceProvider extends ServiceProvider
             'ai-chat.model' => 'gpt-4o-mini',
             'ai-chat.title' => 'Asistente IA',
             'ai-chat.subtitle' => 'Prueba local de Workbench',
+            'ai-chat.mcp.enabled' => filter_var(env('AI_CHAT_MCP', false), FILTER_VALIDATE_BOOLEAN),
+            'ai-chat.mcp.tools' => [
+                CurrentUserTool::class,
+            ],
+            'ai-chat.tool_labels.current-user' => 'Leyendo tu usuario…',
         ]);
     }
 

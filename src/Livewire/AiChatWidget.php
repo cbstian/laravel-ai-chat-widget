@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cbstian\AiChat\Livewire;
 
 use Cbstian\AiChat\Contracts\ChatDriver;
+use Cbstian\AiChat\Mcp\McpToolCatalog;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
@@ -44,11 +45,18 @@ class AiChatWidget extends Component
     public array $context = [];
 
     /**
+     * La página solo puede apagar las tools MCP de esta instancia. true no enciende la función.
+     */
+    #[Locked]
+    public bool $mcp = true;
+
+    /**
      * @param  array<string, mixed>  $context
      */
-    public function mount(array $context = []): void
+    public function mount(array $context = [], mixed $mcp = true): void
     {
         $this->context = $context;
+        $this->mcp = $mcp !== false && $mcp !== 0 && $mcp !== '0' && $mcp !== 'false';
 
         $driver = app(ChatDriver::class);
         $user = Auth::user();
@@ -111,6 +119,8 @@ class AiChatWidget extends Component
         $driver = app(ChatDriver::class);
         $user = Auth::user();
         $startedText = false;
+        $catalog = app(McpToolCatalog::class);
+        $catalog->forceOff(! $this->mcp);
 
         try {
             $result = $driver->ask(
@@ -149,6 +159,8 @@ class AiChatWidget extends Component
             $this->error = $exception->getMessage() !== ''
                 ? $exception->getMessage()
                 : 'No se pudo completar la respuesta.';
+        } finally {
+            $catalog->forceOff(false);
         }
     }
 

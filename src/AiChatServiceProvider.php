@@ -10,6 +10,7 @@ use Cbstian\AiChat\Contracts\ResolvesChatAccess;
 use Cbstian\AiChat\Contracts\ResolvesChatAgent;
 use Cbstian\AiChat\Drivers\AgentChatDriver;
 use Cbstian\AiChat\Livewire\AiChatWidget;
+use Cbstian\AiChat\Mcp\McpToolCatalog;
 use Filament\Facades\Filament;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\Foundation\Application;
@@ -82,6 +83,8 @@ class AiChatServiceProvider extends ServiceProvider
                 $app->make(ResolvesChatAccess::class),
             );
         });
+
+        $this->app->singleton(McpToolCatalog::class);
     }
 
     public function boot(): void

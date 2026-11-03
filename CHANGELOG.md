@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Catálogo opcional de tools MCP de la propia app (`AI_CHAT_MCP`, default apagado). Solo tools `#[IsReadOnly]`, in-process. `laravel/mcp` queda en `suggest` / `require-dev`.
+
 ### Changed
 - Requiere `laravel/ai` ^1.0. Los logs de tokens leen `inputTokens` y `outputTokens`. El historial del widget solo muestra turnos `completed`.
 - Las respuestas en Markdown muestran links, listas, código, citas e imágenes. Los links http(s) abren en una pestaña nueva.

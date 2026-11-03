@@ -64,10 +64,12 @@ MD,
 
     'max_prompt_length' => (int) env('AI_CHAT_MAX_PROMPT_LENGTH', 8000),
 
-    // Clave = nombre de la tool (basename de la clase). Valor = texto mientras streamea.
+    // Clave = nombre de la tool. Las de este paquete usan el basename PHP.
+    // Una tool MCP usa su nombre kebab (current-user), no el basename de la clase.
     'tool_labels' => [
         'ListMarkdownDocuments' => 'Buscando documentos…',
         'ReadMarkdownDocument' => 'Leyendo documentación…',
+        // 'current-user' => 'Leyendo tu usuario…',
     ],
     'default_tool_label' => 'Consultando…',
 
@@ -85,5 +87,19 @@ MD,
         ),
         'max_bytes' => (int) env('AI_CHAT_DOCUMENTS_MAX_BYTES', 200_000),
         'max_files' => (int) env('AI_CHAT_DOCUMENTS_MAX_FILES', 200),
+    ],
+
+    // Tools MCP de la propia app, in-process. Apagado por defecto.
+    // Un config publicado viejo no tiene esta clave: enabled se lee con default false.
+    'mcp' => [
+        'enabled' => filter_var(env('AI_CHAT_MCP', false), FILTER_VALIDATE_BOOLEAN),
+        // class-string de Laravel\Mcp\Server\Tool. Vacío = ninguna.
+        'tools' => [],
+        // class-string de Laravel\Mcp\Server de esta app. Sus tools pasan por los mismos filtros.
+        'servers' => [],
+        // Nombres MCP (kebab) a excluir aunque la clase esté listada.
+        'except' => [],
+        // Reservado para M2. En esta versión las tools de escritura se omiten, no se confirman.
+        'confirm_writes' => true,
     ],
 ];

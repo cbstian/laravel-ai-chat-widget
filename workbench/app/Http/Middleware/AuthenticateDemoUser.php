@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Workbench\App\Http\Middleware;
 
+use Cbstian\AiChat\Mcp\McpToolCatalog;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,21 @@ class AuthenticateDemoUser
     public function handle(Request $request, Closure $next): Response
     {
         DemoChatAgent::fake(function (string $prompt): string {
-            return 'Este es el agente local de Workbench. El widget, el streaming y la persistencia funcionan sin un proveedor real.';
+            $names = [];
+
+            foreach (app(McpToolCatalog::class)->tools() as $tool) {
+                if (is_object($tool) && method_exists($tool, 'name')) {
+                    $name = $tool->name();
+
+                    if (is_string($name)) {
+                        $names[] = $name;
+                    }
+                }
+            }
+
+            $list = $names === [] ? 'ninguna' : implode(', ', $names);
+
+            return 'Este es el agente local de Workbench. Tools MCP de este turno: '.$list.'. Dijiste: '.$prompt;
         });
 
         if (! Auth::check()) {

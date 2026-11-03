@@ -49,4 +49,5 @@ El agente generado ya registra `Cbstian\AiChat\Tools\ListMarkdownDocuments` y `R
 - `AI_CHAT_PERSIST=false` solo apaga las tablas `ai_chat_*`. El historial del chat sigue en las tablas de laravel/ai.
 - El agente debe usar `RemembersConversations` y exponer `stream()`.
 - `fab_icon` y `fab_icon_svg` no cambian la UI.
+- `AI_CHAT_MCP` está apagado por defecto. No lo enciendas al instalar. Solo tools `#[IsReadOnly]` de la propia app, in-process, vía `McpToolCatalog`. No añadas un cliente HTTP o stdio. Las tools de escritura se omiten. Un `config/ai-chat.php` ya publicado no gana la clave `mcp`: el default en código sigue apagado.
 @endverbatim
