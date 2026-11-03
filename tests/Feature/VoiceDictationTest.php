@@ -106,9 +106,11 @@ it('renders the browser microphone without upload urls or secrets', function () 
     expect($css)->toContain('.pc-ai-chat__mic')
         ->toContain('width: 2.75rem')
         ->toContain('max-width: 2.75rem')
+        ->toContain('background: var(--pc-ai-primary); color: var(--pc-ai-header-text);')
         ->toContain('pc-ai-chat-mic-pulse')
         ->toContain('prefers-reduced-motion')
-        ->toContain('prefers-color-scheme: dark');
+        ->not->toContain('color-mix(in srgb, var(--pc-ai-primary) 28%, #111827)')
+        ->not->toContain('.pc-ai-chat__mic--busy .pc-ai-chat__mic-icon { opacity: .35; }');
 });
 
 it('tells the browser to upload audio when the driver is xai', function () {
