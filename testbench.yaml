@@ -22,6 +22,9 @@ workbench:
     factories: true
     views: false
   build:
+    # Copia workbench/.env al skeleton que Testbench arranca. Sin esto, un .env
+    # ya creado en vendor/ se queda con el driver viejo (browser).
+    - sync-skeleton
     - asset-publish
     - create-sqlite-db
     - db-wipe

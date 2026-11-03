@@ -95,7 +95,6 @@ MD,
         // BCP 47. browser lo usa tal cual. laravel-ai y xai lo mapean.
         'language' => env('AI_CHAT_VOICE_LANGUAGE', 'es-CL'),
         'auto_submit' => filter_var(env('AI_CHAT_VOICE_AUTO_SUBMIT', false), FILTER_VALIDATE_BOOLEAN),
-        'user_can_disable' => true,
         // null: sin filtro. Lista de ids de panel Filament. Fuera de Filament no aplica.
         'panels' => null,
 

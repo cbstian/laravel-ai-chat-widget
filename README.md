@@ -114,7 +114,7 @@ AI_CHAT_VOICE_DRIVER=browser
 AI_CHAT_VOICE_LANGUAGE=es-CL
 ```
 
-`browser` usa Web Speech en el navegador (sin API key de la app). `laravel-ai` graba y transcribe con `Laravel\Ai\Transcription`. `xai` hace `POST https://api.x.ai/v1/stt`. La key no se renderiza. Guía paso a paso (alta, upgrade, variables y privacidad): [docs/VOICE.md](docs/VOICE.md).
+`browser` usa Web Speech en el navegador (sin API key de la app). `laravel-ai` graba y transcribe con `Laravel\Ai\Transcription`. `xai` hace `POST https://api.x.ai/v1/stt`. La key no se renderiza. Si la voz está encendida, el micrófono se muestra; la persona no puede ocultarlo. Para probar un driver en el workbench, cámbialo en `workbench/.env` y vuelve a correr `composer serve` (ese comando es el que copia el `.env`). Guía: [docs/VOICE.md](docs/VOICE.md).
 
 ### Contrato del agente
 

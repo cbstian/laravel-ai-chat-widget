@@ -45,7 +45,9 @@ class WorkbenchServiceProvider extends ServiceProvider
             'ai.providers.openai.key' => env('OPENAI_API_KEY') ?: 'workbench',
             'ai.conversations.generate_title' => false,
             // El paquete deja la voz apagada. El workbench la enciende para probar el micrófono.
+            // El driver sale de workbench/.env. composer serve lo copia al skeleton antes de arrancar.
             'ai-chat.voice.enabled' => filter_var(env('AI_CHAT_VOICE', true), FILTER_VALIDATE_BOOLEAN),
+            'ai-chat.voice.driver' => env('AI_CHAT_VOICE_DRIVER', 'browser') ?: 'browser',
             'ai-chat.enabled' => true,
             'ai-chat.persist' => true,
             'ai-chat.verbose_logs' => true,

@@ -59,7 +59,6 @@ AI_CHAT_VOICE_LANGUAGE=es-CL
     'driver' => env('AI_CHAT_VOICE_DRIVER', 'browser'),
     'language' => env('AI_CHAT_VOICE_LANGUAGE', 'es-CL'),
     'auto_submit' => filter_var(env('AI_CHAT_VOICE_AUTO_SUBMIT', false), FILTER_VALIDATE_BOOLEAN),
-    'user_can_disable' => true,
     // null: todos los paneles. Lista de ids de Filament. Fuera de Filament no aplica.
     'panels' => null,
     'max_seconds' => (int) env('AI_CHAT_VOICE_MAX_SECONDS', 60),
@@ -110,7 +109,13 @@ Comunes:
 | `AI_CHAT_VOICE_MAX_KB` | `2048` | El servidor rechaza por tamaño. No usa la duración que declare el JS |
 | `AI_CHAT_VOICE_RATE_LIMIT` | `10` | Transcripciones por minuto y por id de usuario (`ai-chat:voice:{id}`), aparte de los 20 mensajes del chat |
 
-`voice.user_can_disable` (default `true`, sin env) deja que la persona oculte el botón. Se guarda en `localStorage` con la clave `pc-ai-chat-voice`. No cambia el driver ni enciende la función.
+Si la voz está encendida, el micrófono se muestra siempre. La persona no puede ocultarlo. La única forma de quitarlo en una pantalla es la prop del widget, que es una decisión de quien integra la app, no un ajuste del usuario:
+
+```blade
+@livewire('ai-chat-widget', ['voice' => false])
+```
+
+Esa prop está bloqueada y solo puede forzar el apagado. No es el mismo mecanismo que el botón «Ocultar» que hubo un momento (eso guardaba `pc-ai-chat-voice` en `localStorage`). Ese botón ya no existe. Si el navegador todavía tiene esa clave, el widget la borra al abrir el panel.
 
 ### `browser`
 
@@ -225,7 +230,7 @@ El DOM solo recibe el modo (`browser` o `upload`), el idioma del navegador, los 
 7. Un archivo que no es audio, o mayor de 2 MB, no llama al provider. El temporal no se queda en `livewire-tmp`.
 8. El undécimo dictado en un minuto responde que se alcanzó el límite, sin request nuevo.
 
-En el workbench del paquete, `composer serve` enciende la voz para probar. `AI_CHAT_VOICE_DRIVER` elige el motor. Las keys van en `workbench/.env`, no en el repo.
+En el workbench del paquete, edita `workbench/.env` y arranca con `composer serve`. Ese comando copia `workbench/.env` al skeleton que Testbench realmente ejecuta (`vendor/orchestra/testbench-core/laravel/.env`). Si el skeleton ya existía, un cambio solo en `workbench/.env` no llegaba al servidor: el driver se quedaba en `browser` y una `XAI_API_KEY` mala no se notaba, porque Web Speech no la usa. La página de demo muestra el driver que resolvió el servidor. Para `xai` tiene que decir `xai` y «sube el audio». Si dice `browser`, el proceso no leyó el `.env` nuevo: para el servidor y vuelve a correr `composer serve`. No hace falta `config:clear` salvo que hayas cacheado la config a mano.
 
 ## Si no aparece el micrófono o falla el dictado
 

@@ -93,11 +93,36 @@ it('renders the browser microphone without upload urls or secrets', function () 
         ->assertDontSee('api.x.ai', false)
         ->assertDontSee('sk-browser-must-not-leak', false)
         ->assertDontSee('grok-voice-transcribe-2.0', false)
-        ->assertDontSee('laravel-ai', false);
+        ->assertDontSee('laravel-ai', false)
+        ->assertDontSee('Ocultar dictado', false)
+        ->assertDontSee("localStorage.setItem('pc-ai-chat-voice'", false)
+        ->assertSee("localStorage.removeItem('pc-ai-chat-voice')", false);
 
     $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/ai-chat.css');
 
     expect($css)->toContain('.pc-ai-chat__mic');
+});
+
+it('tells the browser to upload audio when the driver is xai', function () {
+    config([
+        'ai-chat.voice.enabled' => true,
+        'ai-chat.voice.driver' => 'xai',
+        'ai-chat.voice.xai.key' => 'sk-not-rendered',
+    ]);
+
+    $user = voiceUser('voice-xai-mode@example.test');
+
+    $html = Livewire::actingAs($user)
+        ->test(AiChatWidget::class)
+        ->set('open', true)
+        ->html();
+
+    expect($html)->toContain('\u0022mode\u0022:\u0022upload\u0022')
+        ->not->toContain('\u0022mode\u0022:\u0022browser\u0022')
+        ->not->toContain('sk-not-rendered')
+        ->not->toContain('Ocultar dictado')
+        ->not->toContain("localStorage.setItem('pc-ai-chat-voice'")
+        ->toContain("localStorage.removeItem('pc-ai-chat-voice')");
 });
 
 it('hides the microphone when the page forces voice off', function () {

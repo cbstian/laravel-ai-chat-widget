@@ -98,7 +98,6 @@ final class VoiceSettings
      *     auto_submit: bool,
      *     interim: bool,
      *     continuous: bool,
-     *     user_can_disable: bool,
      *     mimes: list<string>
      * }
      */
@@ -113,7 +112,6 @@ final class VoiceSettings
             'auto_submit' => $this->autoSubmit(),
             'interim' => $browser && VoiceValues::bool(data_get(config('ai-chat.voice'), 'browser.interim_results', true), true),
             'continuous' => $browser && VoiceValues::bool(data_get(config('ai-chat.voice'), 'browser.continuous', false), false),
-            'user_can_disable' => VoiceValues::bool(data_get(config('ai-chat.voice'), 'user_can_disable', true), true),
             'mimes' => $browser ? [] : ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'],
         ];
     }

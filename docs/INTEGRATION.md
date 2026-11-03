@@ -147,7 +147,7 @@ Cada clave está comentada en `config/ai-chat.php`. Resumen operativo:
 
 ## Dictado por voz
 
-Opcional y apagado por defecto (`AI_CHAT_VOICE`). Drivers `browser`, `laravel-ai` y `xai`. No hay migración. Alta, el bloque `voice` en un config ya publicado, vistas, variables, privacidad y el checklist están en [VOICE.md](VOICE.md).
+Opcional y apagado por defecto (`AI_CHAT_VOICE`). Drivers `browser`, `laravel-ai` y `xai`. No hay migración. Si está encendido, el micrófono se muestra; la persona no puede ocultarlo. Alta, el bloque `voice` en un config ya publicado, vistas, variables, privacidad y el checklist están en [VOICE.md](VOICE.md).
 
 ## Agente y tools del LLM
 

@@ -216,8 +216,3 @@
   flex: 1 0 100%; margin: 0; font-size: 0.75rem; line-height: 1.3; color: #b91c1c;
 }
 .pc-ai-chat__voice-note { margin: 0 0.75rem; }
-.pc-ai-chat__voice-toggle {
-  border: 0; background: transparent; color: #4b5563; cursor: pointer;
-  font-size: 0.75rem; padding: 0 0.15rem; align-self: center;
-}
-.pc-ai-chat__voice-toggle:hover { color: var(--pc-ai-primary); }

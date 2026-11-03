@@ -112,7 +112,7 @@
                         type="button"
                         class="pc-ai-chat__mic"
                         x-cloak
-                        x-show="isSupported() && !hidden"
+                        x-show="isSupported()"
                         x-on:click="toggle()"
                         x-bind:class="{ 'pc-ai-chat__mic--recording': status === 'recording', 'pc-ai-chat__mic--busy': status === 'transcribing' || status === 'requesting' }"
                         x-bind:aria-label="label()"
@@ -124,21 +124,6 @@
                         </svg>
                         <span x-show="status !== 'idle'" x-text="label()"></span>
                     </button>
-                    <button
-                        type="button"
-                        class="pc-ai-chat__voice-toggle"
-                        x-cloak
-                        x-show="isSupported() && settings.user_can_disable && hidden"
-                        x-on:click="showVoice()"
-                    >Activar dictado</button>
-                    <button
-                        type="button"
-                        class="pc-ai-chat__voice-toggle"
-                        x-cloak
-                        x-show="isSupported() && settings.user_can_disable && !hidden && status === 'idle'"
-                        x-on:click="hideVoice()"
-                        title="Ocultar dictado"
-                    >Ocultar</button>
                 @endif
                 <button
                     type="submit"

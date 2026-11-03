@@ -5,6 +5,12 @@
 ### Added
 - Dictado por voz opcional y apagado por defecto (`voice.enabled`). Drivers `browser` (Web Speech), `laravel-ai` (`Transcription`) y `xai` (`POST /v1/stt`). La API key no sale al navegador. Sin cambios si no se enciende.
 
+### Fixed
+- `composer serve` vuelve a copiar `workbench/.env` al arrancar. Si no, Testbench seguía con el `.env` viejo del skeleton y el driver se quedaba en `browser`.
+
+### Changed
+- Quien usa el chat ya no puede ocultar el micrófono. Si la voz está encendida, el botón se muestra. Apagarlo en una pantalla sigue siendo `@livewire('ai-chat-widget', ['voice' => false])`.
+
 ### Changed
 - Requiere `laravel/ai` ^1.0. Los logs de tokens leen `inputTokens` y `outputTokens`. El historial del widget solo muestra turnos `completed`.
 - Las respuestas en Markdown muestran links, listas, código, citas e imágenes. Los links http(s) abren en una pestaña nueva.

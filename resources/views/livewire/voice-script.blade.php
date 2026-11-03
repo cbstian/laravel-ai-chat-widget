@@ -5,7 +5,6 @@
                 settings: settings,
                 status: 'idle',
                 message: '',
-                hidden: false,
                 recognition: null,
                 recorder: null,
                 stream: null,
@@ -13,7 +12,9 @@
                 stopTimer: null,
                 prefix: '',
                 init() {
-                    this.hidden = !!(settings.user_can_disable && window.localStorage.getItem('pc-ai-chat-voice') === '0');
+                    try {
+                        window.localStorage.removeItem('pc-ai-chat-voice');
+                    } catch (error) {}
                 },
                 isSupported() {
                     if (settings.mode === 'browser') {
@@ -37,16 +38,6 @@
                     }
 
                     return 'Dictar';
-                },
-                hideVoice() {
-                    this.hidden = true;
-                    this.stop();
-                    window.localStorage.setItem('pc-ai-chat-voice', '0');
-                },
-                showVoice() {
-                    this.hidden = false;
-                    this.message = '';
-                    window.localStorage.setItem('pc-ai-chat-voice', '1');
                 },
                 toggle() {
                     if (this.status === 'transcribing') {
