@@ -114,7 +114,7 @@ AI_CHAT_VOICE_DRIVER=browser
 AI_CHAT_VOICE_LANGUAGE=es-CL
 ```
 
-`browser` usa Web Speech en el navegador (sin API key de la app). `laravel-ai` graba y transcribe con `Laravel\Ai\Transcription` (`AI_CHAT_VOICE_PROVIDER`, por ejemplo `openai`, más la key de ese provider). `xai` hace `POST https://api.x.ai/v1/stt` con `XAI_API_KEY` o `config('ai.providers.xai.key')`. La key no se renderiza. El texto queda en el textarea; `AI_CHAT_VOICE_AUTO_SUBMIT=true` lo envía. Detalle en [docs/INTEGRATION.md](docs/INTEGRATION.md).
+`browser` usa Web Speech en el navegador (sin API key de la app). `laravel-ai` graba y transcribe con `Laravel\Ai\Transcription`. `xai` hace `POST https://api.x.ai/v1/stt`. La key no se renderiza. Guía paso a paso (alta, upgrade, variables y privacidad): [docs/VOICE.md](docs/VOICE.md).
 
 ### Contrato del agente
 
