@@ -35,6 +35,15 @@
         <h1>Workbench — laravel-ai-chat-widget</h1>
         <p>Sesión de prueba: {{ auth()->user()?->email }}.</p>
         <p>Abre el chat con el botón flotante y envía un mensaje. La respuesta la genera un agente local, sin proveedor real.</p>
+        <p>El micrófono sale porque este workbench enciende <code>voice.enabled</code>. El texto queda en el campo para revisarlo antes de enviar.</p>
+        <p>Driver que está usando el servidor: <strong>{{ config('ai-chat.voice.driver', 'browser') }}</strong>.
+            @if (config('ai-chat.voice.driver') === 'browser')
+                Modo del widget: Web Speech. No llama a xAI aunque <code>XAI_API_KEY</code> tenga valor.
+            @else
+                Modo del widget: sube el audio y lo transcribe en el servidor.
+            @endif
+            Si cambiaste <code>workbench/.env</code> y esto no coincide, vuelve a correr <code>composer serve</code>.
+        </p>
     </main>
 
     @livewire('ai-chat-widget')

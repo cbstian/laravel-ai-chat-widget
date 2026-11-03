@@ -15,6 +15,13 @@ use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {
+    /**
+     * El .env del workbench no debe cambiar los defaults del paquete en la suite.
+     *
+     * @var bool
+     */
+    protected $loadEnvironmentVariables = false;
+
     protected function setUp(): void
     {
         parent::setUp();

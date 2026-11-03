@@ -86,4 +86,42 @@ MD,
         'max_bytes' => (int) env('AI_CHAT_DOCUMENTS_MAX_BYTES', 200_000),
         'max_files' => (int) env('AI_CHAT_DOCUMENTS_MAX_FILES', 200),
     ],
+
+    // Dictado. enabled false gana siempre: sin esta clave (config publicada vieja) el micrófono no aparece.
+    // La API key de xAI no se renderiza. Pégala en .env, no en un config commiteado.
+    'voice' => [
+        'enabled' => filter_var(env('AI_CHAT_VOICE', false), FILTER_VALIDATE_BOOLEAN),
+        'driver' => env('AI_CHAT_VOICE_DRIVER', 'browser'),
+        // BCP 47. browser lo usa tal cual. laravel-ai y xai lo mapean.
+        'language' => env('AI_CHAT_VOICE_LANGUAGE', 'es-CL'),
+        'auto_submit' => filter_var(env('AI_CHAT_VOICE_AUTO_SUBMIT', false), FILTER_VALIDATE_BOOLEAN),
+        // null: sin filtro. Lista de ids de panel Filament. Fuera de Filament no aplica.
+        'panels' => null,
+
+        'max_seconds' => (int) env('AI_CHAT_VOICE_MAX_SECONDS', 60),
+        'max_kilobytes' => (int) env('AI_CHAT_VOICE_MAX_KB', 2048),
+        'rate_limit_per_minute' => (int) env('AI_CHAT_VOICE_RATE_LIMIT', 10),
+
+        'browser' => [
+            'interim_results' => true,
+            'continuous' => false,
+        ],
+
+        'laravel-ai' => [
+            // Vacío: solo usa ai.default si ese provider transcribe. xAI y Anthropic no sirven aquí.
+            'provider' => env('AI_CHAT_VOICE_PROVIDER'),
+            'model' => env('AI_CHAT_VOICE_MODEL'),
+            'diarize' => false,
+        ],
+
+        'xai' => [
+            'key' => env('XAI_API_KEY'),
+            'url' => env('AI_CHAT_XAI_STT_URL', 'https://api.x.ai/v1/stt'),
+            'model' => env('AI_CHAT_XAI_STT_MODEL', 'grok-voice-transcribe-2.0'),
+            'format' => filter_var(env('AI_CHAT_XAI_STT_FORMAT', true), FILTER_VALIDATE_BOOLEAN),
+            'filler_words' => false,
+            'keyterms' => [],
+            'timeout' => 30,
+        ],
+    ],
 ];

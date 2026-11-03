@@ -104,6 +104,18 @@ OPENAI_API_KEY=
 
 `OPENAI_API_KEY` la consume `laravel/ai` (`config/ai.php`). Si `AI_CHAT_PROVIDER` queda vacío, se usa `config('ai.default')`. El agente generado ya registra `ListMarkdownDocuments` y `ReadMarkdownDocument`, que leen `.md` de `resources/ai/chat` y de los directorios en `AI_CHAT_DOCUMENT_PATHS`.
 
+### Dictado por voz
+
+Apagado por defecto. Un `composer update` no muestra el micrófono ni cambia el chat. Quien publicó `config/ai-chat.php` no recibe el bloque `voice` solo: el código lee `enabled` con default `false`.
+
+```env
+AI_CHAT_VOICE=true
+AI_CHAT_VOICE_DRIVER=browser
+AI_CHAT_VOICE_LANGUAGE=es-CL
+```
+
+`browser` usa Web Speech en el navegador (sin API key de la app). `laravel-ai` graba y transcribe con `Laravel\Ai\Transcription`. `xai` hace `POST https://api.x.ai/v1/stt`. La key no se renderiza. Si la voz está encendida, el micrófono se muestra; la persona no puede ocultarlo. Para probar un driver en el workbench, cámbialo en `workbench/.env` y vuelve a correr `composer serve` (ese comando es el que copia el `.env`). Guía: [docs/VOICE.md](docs/VOICE.md).
+
 ### Contrato del agente
 
 ```php
@@ -164,6 +176,7 @@ No actives el hook y además montes el componente: el chat saldría duplicado. H
 | CSS encapsulado (`.pc-ai-chat`) | API keys (van en `laravel/ai`) |
 | Persistencia opcional de sesiones y logs | Autorización de negocio (salvo el contrato de acceso) |
 | Tools `ListMarkdownDocuments` y `ReadMarkdownDocument` | Lectura de archivos fuera de `ai-chat.documents.paths` |
+| Dictado por voz opcional (`browser`, `laravel-ai`, `xai`), apagado por defecto | Enviar el audio a un provider sin que la app lo elija |
 
 ## Persistencia
 
