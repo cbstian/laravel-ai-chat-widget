@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Cbstian\AiChat\Livewire;
 
 use Cbstian\AiChat\Contracts\ChatDriver;
+use Cbstian\AiChat\Mcp\McpToolCatalog;
 use Cbstian\AiChat\Speech\SpeechToTextManager;
 use Cbstian\AiChat\Speech\SpeechUpload;
 use Cbstian\AiChat\Speech\VoiceSettings;
@@ -58,15 +59,22 @@ class AiChatWidget extends Component
     #[Locked]
     public bool $voice = true;
 
+    /**
+     * La página solo puede apagar las tools MCP de esta instancia. true no enciende la función.
+     */
+    #[Locked]
+    public bool $mcp = true;
+
     public ?TemporaryUploadedFile $audio = null;
 
     /**
      * @param  array<string, mixed>  $context
      */
-    public function mount(array $context = [], mixed $voice = true): void
+    public function mount(array $context = [], mixed $voice = true, mixed $mcp = true): void
     {
         $this->context = $context;
         $this->voice = $voice !== false && $voice !== 0 && $voice !== '0' && $voice !== 'false';
+        $this->mcp = $mcp !== false && $mcp !== 0 && $mcp !== '0' && $mcp !== 'false';
 
         $driver = app(ChatDriver::class);
         $user = Auth::user();
@@ -129,6 +137,8 @@ class AiChatWidget extends Component
         $driver = app(ChatDriver::class);
         $user = Auth::user();
         $startedText = false;
+        $catalog = app(McpToolCatalog::class);
+        $catalog->forceOff(! $this->mcp);
 
         try {
             $result = $driver->ask(
@@ -167,6 +177,8 @@ class AiChatWidget extends Component
             $this->error = $exception->getMessage() !== ''
                 ? $exception->getMessage()
                 : 'No se pudo completar la respuesta.';
+        } finally {
+            $catalog->forceOff(false);
         }
     }
 

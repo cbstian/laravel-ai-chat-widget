@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace {{ namespace }};
 
+use Cbstian\AiChat\Mcp\McpToolCatalog;
 use Cbstian\AiChat\Tools\ListMarkdownDocuments;
 use Cbstian\AiChat\Tools\ReadMarkdownDocument;
 use Laravel\Ai\Concerns\RemembersConversations;
@@ -34,6 +35,8 @@ TXT;
         return [
             new ListMarkdownDocuments,
             new ReadMarkdownDocument,
+            // Vacío mientras ai-chat.mcp.enabled sea false. No abre HTTP ni stdio.
+            ...app(McpToolCatalog::class)->tools(),
         ];
     }
 }

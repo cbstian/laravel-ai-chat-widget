@@ -30,8 +30,9 @@
     },
     "require-dev": {
         "larastan/larastan": "^3.9",
-        "laravel/pint": "^1.29",
+        "laravel/mcp": "^1.1",
         "laravel/pao": "^1.0",
+        "laravel/pint": "^1.29",
         "orchestra/testbench": "^10.0||^11.0",
         "pestphp/pest": "^4.6||^5.0",
         "pestphp/pest-plugin-laravel": "^4.1||^5.0",
@@ -109,7 +110,8 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "suggest": {
-        "filament/filament": "Para montar el widget con PanelsRenderHook::BODY_END"
+        "filament/filament": "Para montar el widget con PanelsRenderHook::BODY_END",
+        "laravel/mcp": "Para exponer en el chat tools de solo lectura de la propia app (Laravel\\Mcp\\Server\\Tool). Opcional; no hace falta un servidor HTTP ni stdio."
     },
     "support": {
         "issues": "https://github.com/cbstian/laravel-ai-chat-widget/issues",

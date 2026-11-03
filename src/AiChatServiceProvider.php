@@ -10,6 +10,7 @@ use Cbstian\AiChat\Contracts\ResolvesChatAccess;
 use Cbstian\AiChat\Contracts\ResolvesChatAgent;
 use Cbstian\AiChat\Drivers\AgentChatDriver;
 use Cbstian\AiChat\Livewire\AiChatWidget;
+use Cbstian\AiChat\Mcp\McpToolCatalog;
 use Cbstian\AiChat\Speech\FilamentPanelId;
 use Cbstian\AiChat\Speech\SpeechToTextManager;
 use Cbstian\AiChat\Speech\VoiceSettings;
@@ -85,6 +86,8 @@ class AiChatServiceProvider extends ServiceProvider
                 $app->make(ResolvesChatAccess::class),
             );
         });
+
+        $this->app->singleton(McpToolCatalog::class);
 
         $this->app->singleton(SpeechToTextManager::class, function (Application $app): SpeechToTextManager {
             return new SpeechToTextManager($app);

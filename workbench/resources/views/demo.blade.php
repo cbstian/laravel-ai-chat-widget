@@ -35,6 +35,7 @@
         <h1>Workbench — laravel-ai-chat-widget</h1>
         <p>Sesión de prueba: {{ auth()->user()?->email }}.</p>
         <p>Abre el chat con el botón flotante y envía un mensaje. La respuesta la genera un agente local, sin proveedor real.</p>
+        <p>Con <code>AI_CHAT_MCP=true</code> la respuesta nombra la tool de solo lectura <code>current-user</code>. El agente local no le pide al modelo que la ejecute.</p>
         <p>El micrófono sale porque este workbench enciende <code>voice.enabled</code>. El texto queda en el campo para revisarlo antes de enviar.</p>
         <p>Driver que está usando el servidor: <strong>{{ config('ai-chat.voice.driver', 'browser') }}</strong>.
             @if (config('ai-chat.voice.driver') === 'browser')
