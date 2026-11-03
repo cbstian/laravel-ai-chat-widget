@@ -106,7 +106,7 @@ OPENAI_API_KEY=
 
 ### Tools MCP
 
-Apagadas por defecto. Un `composer update` no cambia el chat. `laravel/mcp` es `suggest`, no `require`. Con `AI_CHAT_MCP=true` el catálogo entrega solo tools `#[IsReadOnly]` listadas en `ai-chat.mcp.tools` (o las de un `Server` de la misma app en `mcp.servers`). Se ejecutan en el request, con el usuario logueado. Las de escritura se omiten hasta que el widget pueda confirmarlas. `@livewire('ai-chat-widget', ['mcp' => false])` las apaga en esa pantalla. Detalle en [docs/INTEGRATION.md](docs/INTEGRATION.md).
+Apagadas por defecto. Un `composer update` no cambia el chat. `laravel/mcp` es `suggest`, no `require`. Con `AI_CHAT_MCP=true` el catálogo entrega solo tools `#[IsReadOnly]` de la propia app, en proceso. Guía paso a paso (alta, upgrade, tool de ejemplo, opt-out): [docs/MCP.md](docs/MCP.md).
 
 ### Contrato del agente
 

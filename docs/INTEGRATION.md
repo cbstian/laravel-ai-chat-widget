@@ -10,6 +10,7 @@ Lee estos archivos del paquete instalado (`vendor/cbstian/laravel-ai-chat-widget
 |---|---|
 | `README.md` | Contrato público corto |
 | `docs/INTEGRATION.md` | Este flujo |
+| `docs/MCP.md` | Tools MCP de la propia app, solo lectura, in-process |
 | `config/ai-chat.php` | Todas las claves, con el efecto de cada una |
 | `resources/stubs/welcome.md` | Mensaje inicial que publica `ai-chat:install` |
 | `resources/stubs/agent/ChatAgent.php.stub` | Agente que ya conecta las tools de Markdown |
@@ -146,67 +147,7 @@ Cada clave está comentada en `config/ai-chat.php`. Resumen operativo:
 
 ## Tools MCP de la propia app
 
-Opcional. No es un cliente MCP: no hay `Mcp::web`, ni `Client::web`, ni `Client::local`, ni `php artisan mcp:start` desde el chat. Las clases `Laravel\Mcp\Server\Tool` de esta app se ejecutan en el mismo request. `laravel/ai` las envuelve como `McpServerTool`, y `$request->user()` sigue siendo la persona del chat.
-
-`laravel/mcp` no es dependencia del paquete. Quien lo quiera:
-
-```bash
-composer require laravel/mcp:^1.1
-```
-
-Sin ese paquete el catálogo devuelve `[]`. `AI_CHAT_MCP` ausente o `false` también. No hay migración.
-
-```env
-AI_CHAT_MCP=true
-```
-
-En el config publicado:
-
-```php
-'mcp' => [
-    'enabled' => env('AI_CHAT_MCP', false),
-    // class-string de Laravel\Mcp\Server\Tool. Vacío = ninguna.
-    'tools' => [
-        \App\Mcp\Tools\CurrentUserTool::class,
-    ],
-    // Opcional: un Server de esta misma app. Mismos filtros que tools.
-    'servers' => [
-        // \App\Mcp\DemoServer::class,
-    ],
-    'except' => [],
-    // Reservado. En esta versión las tools de escritura se omiten.
-    'confirm_writes' => true,
-],
-```
-
-Solo entran tools con la anotación `#[IsReadOnly]` (`readOnlyHint === true`). Una tool sin esa marca, o de escritura, se omite y queda un `Log::debug`. La confirmación en el widget es una fase posterior: hasta entonces no se exponen. `shouldRegister()` que devuelva false también las deja fuera. `except` quita por el nombre MCP (kebab), no por el basename PHP.
-
-El nombre que ve el modelo es el de la tool MCP (`current-user`). La etiqueta del stream va en `tool_labels` con esa clave, no con `CurrentUserTool`.
-
-El stub de `ChatAgent` ya hace el spread. Las apps ya instaladas lo añaden a mano; `ai-chat:install` no pisa `app/Ai`:
-
-```php
-public function tools(): iterable
-{
-    return [
-        new \Cbstian\AiChat\Tools\ListMarkdownDocuments,
-        new \Cbstian\AiChat\Tools\ReadMarkdownDocument,
-        ...app(\Cbstian\AiChat\Mcp\McpToolCatalog::class)->tools(),
-    ];
-}
-```
-
-Con `enabled` en false ese spread no añade nada. Para apagarlo en una pantalla: `@livewire('ai-chat-widget', ['mcp' => false])`. El argumento está bloqueado y no puede pasar de false a true.
-
-Otra fuente de clases, con los mismos filtros:
-
-```php
-app(\Cbstian\AiChat\Mcp\McpToolCatalog::class)->extend(
-    fn () => [\App\Mcp\Tools\CurrentUserTool::class],
-);
-```
-
-`mcp.servers` instancia el `Server` en proceso (sin transporte de red) y lee `createContext()->tools()`. No hace falta registrar `Mcp::web` ni `Mcp::local` para el chat. Las policies siguen dentro de `handle()` y de `shouldRegister()`. Un grupo `ToolSearch` no se aplana: nombra la tool en `mcp.tools` si quieres exponerla.
+Opcional y apagado por defecto (`AI_CHAT_MCP`). Solo tools `#[IsReadOnly]` de esta app, en el mismo request, con el usuario del chat. No hay cliente HTTP ni stdio. Instalación, el spread en `ChatAgent` que ya está en producción, allowlist, `mcp.servers`, opt-out y el checklist están en [MCP.md](MCP.md).
 
 ## Agente y tools del LLM
 
