@@ -225,7 +225,7 @@ El DOM solo recibe el modo (`browser` o `upload`), el idioma del navegador, los 
 2. Con `true` y `browser`, en Chrome o Edge, el botón está, pide permiso y el texto queda en el textarea sin enviarse.
 3. `voice => false` en el `@livewire` oculta el botón aunque la config esté en true.
 4. Un `config/ai-chat.php` viejo, sin bloque `voice`, tampoco muestra el botón.
-5. `laravel-ai` con `AI_CHAT_VOICE_PROVIDER=openai` y `OPENAI_API_KEY` real: pulsar, hablar, pulsar otra vez (o esperar el corte) muestra «Transcribiendo…» y concatena el texto.
+5. `laravel-ai` con `AI_CHAT_VOICE_PROVIDER=openai` y `OPENAI_API_KEY` real: pulsar, hablar, pulsar otra vez (o esperar el corte). El botón no cambia de tamaño: al grabar se pone rojo con un anillo, y al transcribir muestra un giro y queda deshabilitado. El texto del estado solo lo anuncia el lector de pantalla. El texto dictado se concatena en el campo.
 6. `xai` con `XAI_API_KEY`: igual, y el HTML de la página no contiene la key ni `api.x.ai`.
 7. Un archivo que no es audio, o mayor de 2 MB, no llama al provider. El temporal no se queda en `livewire-tmp`.
 8. El undécimo dictado en un minuto responde que se alcanzó el límite, sin request nuevo.

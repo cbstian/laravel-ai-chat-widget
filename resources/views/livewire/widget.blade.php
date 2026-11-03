@@ -115,15 +115,19 @@
                         x-show="isSupported()"
                         x-on:click="toggle()"
                         x-bind:class="{ 'pc-ai-chat__mic--recording': status === 'recording', 'pc-ai-chat__mic--busy': status === 'transcribing' || status === 'requesting' }"
+                        x-bind:disabled="status === 'transcribing'"
                         x-bind:aria-label="label()"
                         x-bind:title="label()"
+                        x-bind:aria-pressed="status === 'recording'"
+                        x-bind:aria-busy="status === 'transcribing' || status === 'requesting'"
                     >
-                        <svg class="pc-ai-chat__glyph" viewBox="0 0 24 24" aria-hidden="true" x-show="status === 'idle'">
+                        <svg class="pc-ai-chat__glyph pc-ai-chat__mic-icon" viewBox="0 0 24 24" aria-hidden="true">
                             <rect x="9" y="3" width="6" height="11" rx="3" />
                             <path d="M6 11a6 6 0 0 0 12 0M12 17v4M8 21h8" />
                         </svg>
-                        <span x-show="status !== 'idle'" x-text="label()"></span>
+                        <span class="pc-ai-chat__mic-spin" x-show="status === 'transcribing' || status === 'requesting'" aria-hidden="true"></span>
                     </button>
+                    <span class="pc-ai-chat__sr" aria-live="polite" x-text="label()"></span>
                 @endif
                 <button
                     type="submit"

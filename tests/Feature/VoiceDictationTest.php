@@ -96,11 +96,19 @@ it('renders the browser microphone without upload urls or secrets', function () 
         ->assertDontSee('laravel-ai', false)
         ->assertDontSee('Ocultar dictado', false)
         ->assertDontSee("localStorage.setItem('pc-ai-chat-voice'", false)
-        ->assertSee("localStorage.removeItem('pc-ai-chat-voice')", false);
+        ->assertSee("localStorage.removeItem('pc-ai-chat-voice')", false)
+        ->assertSee('aria-live="polite"', false)
+        ->assertSee('pc-ai-chat__sr', false)
+        ->assertDontSee('x-text="label()"></span></button>', false);
 
     $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/ai-chat.css');
 
-    expect($css)->toContain('.pc-ai-chat__mic');
+    expect($css)->toContain('.pc-ai-chat__mic')
+        ->toContain('width: 2.75rem')
+        ->toContain('max-width: 2.75rem')
+        ->toContain('pc-ai-chat-mic-pulse')
+        ->toContain('prefers-reduced-motion')
+        ->toContain('prefers-color-scheme: dark');
 });
 
 it('tells the browser to upload audio when the driver is xai', function () {

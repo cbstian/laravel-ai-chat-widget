@@ -7,6 +7,10 @@
   --pc-ai-assistant-bubble: #ffffff;
   --pc-ai-fab: var(--pc-ai-primary);
   --pc-ai-panel-bg: #f9fafb;
+  --pc-ai-mic: color-mix(in srgb, var(--pc-ai-primary) 12%, #f3f4f6);
+  --pc-ai-mic-hover: color-mix(in srgb, var(--pc-ai-primary) 18%, #e5e7eb);
+  --pc-ai-danger: #b91c1c;
+  --pc-ai-on-danger: #ffffff;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
   box-sizing: border-box;
 }
@@ -203,14 +207,49 @@
 .pc-ai-chat__send:disabled { opacity: .45; cursor: not-allowed; filter: none; }
 .pc-ai-chat [x-cloak] { display: none !important; }
 .pc-ai-chat__mic {
-  min-width: 2.75rem; align-self: stretch; flex-shrink: 0; border: 0; border-radius: 0.75rem;
-  cursor: pointer; background: #f3f4f6; color: var(--pc-ai-primary);
+  position: relative;
+  width: 2.75rem; min-width: 2.75rem; max-width: 2.75rem;
+  align-self: stretch; flex: 0 0 2.75rem; box-sizing: border-box;
+  border: 0; border-radius: 0.75rem; padding: 0; cursor: pointer;
+  background: var(--pc-ai-mic); color: var(--pc-ai-primary);
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 0 0.65rem; font-size: 0.75rem; font-weight: 600; line-height: 1.1;
 }
-.pc-ai-chat__mic:hover { background: #e5e7eb; }
-.pc-ai-chat__mic--recording { background: #b91c1c; color: #fff; }
-.pc-ai-chat__mic--busy { opacity: .8; }
+.pc-ai-chat__mic:hover { background: var(--pc-ai-mic-hover); }
+.pc-ai-chat__mic:disabled { cursor: not-allowed; }
+.pc-ai-chat__mic--recording {
+  background: var(--pc-ai-danger); color: var(--pc-ai-on-danger);
+  animation: pc-ai-chat-mic-pulse 1.4s ease-out infinite;
+}
+.pc-ai-chat__mic--busy { color: var(--pc-ai-primary); }
+.pc-ai-chat__mic--busy .pc-ai-chat__mic-icon { opacity: .35; }
+.pc-ai-chat__mic-spin {
+  position: absolute; inset: 0.4rem; border-radius: 999px;
+  border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+  animation: pc-ai-chat-mic-spin .8s linear infinite;
+}
+@keyframes pc-ai-chat-mic-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pc-ai-danger) 50%, transparent); }
+  100% { box-shadow: 0 0 0 .45rem transparent; }
+}
+@keyframes pc-ai-chat-mic-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .pc-ai-chat__mic--recording,
+  .pc-ai-chat__mic-spin { animation: none; }
+  .pc-ai-chat__mic--recording { box-shadow: 0 0 0 2px var(--pc-ai-danger); }
+}
+@media (prefers-color-scheme: dark) {
+  .pc-ai-chat {
+    --pc-ai-mic: color-mix(in srgb, var(--pc-ai-primary) 28%, #111827);
+    --pc-ai-mic-hover: color-mix(in srgb, var(--pc-ai-primary) 40%, #0f172a);
+    --pc-ai-danger: #f87171;
+    --pc-ai-on-danger: #111827;
+  }
+}
+.pc-ai-chat__sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 .pc-ai-chat__voice-status,
 .pc-ai-chat__voice-note {
   flex: 1 0 100%; margin: 0; font-size: 0.75rem; line-height: 1.3; color: #b91c1c;

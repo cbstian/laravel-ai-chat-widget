@@ -10,6 +10,7 @@
 
 ### Changed
 - Quien usa el chat ya no puede ocultar el micrófono. Si la voz está encendida, el botón se muestra. Apagarlo en una pantalla sigue siendo `@livewire('ai-chat-widget', ['voice' => false])`.
+- El botón del micrófono no muestra «Grabando…» ni «Transcribiendo…» y no cambia de tamaño. El estado se ve por el color y una animación; el texto queda solo para lectores de pantalla.
 
 ### Changed
 - Requiere `laravel/ai` ^1.0. Los logs de tokens leen `inputTokens` y `outputTokens`. El historial del widget solo muestra turnos `completed`.
