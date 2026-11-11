@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Cbstian\AiChat\Livewire;
 
 use Cbstian\AiChat\Contracts\ChatDriver;
+use Cbstian\AiChat\History\HistorySettings;
+use Cbstian\AiChat\History\PreToolTextBuffer;
 use Cbstian\AiChat\Mcp\McpToolCatalog;
 use Cbstian\AiChat\Speech\SpeechToTextManager;
 use Cbstian\AiChat\Speech\SpeechUpload;
@@ -18,6 +20,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
+use Laravel\Ai\Streaming\Events\StreamEnd;
 use Laravel\Ai\Streaming\Events\StreamStart;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\ToolCall;
@@ -137,6 +140,8 @@ class AiChatWidget extends Component
         $driver = app(ChatDriver::class);
         $user = Auth::user();
         $startedText = false;
+        $hidePreamble = app(HistorySettings::class)->hidePreToolText();
+        $preamble = new PreToolTextBuffer;
         $catalog = app(McpToolCatalog::class);
         $catalog->forceOff(! $this->mcp);
 
@@ -146,24 +151,53 @@ class AiChatWidget extends Component
                 $this->pendingQuestion,
                 $this->conversationId,
                 $this->context,
-                function (object $event) use (&$startedText): void {
+                function (object $event) use (&$startedText, $hidePreamble, $preamble): void {
                     if ($event instanceof ToolCall) {
-                        $label = $this->toolLabel($event->toolCall->name);
-                        $this->stream(to: 'streamingAnswer', content: e($label), replace: true);
+                        if ($hidePreamble) {
+                            $preamble->discard();
+                        }
+
+                        $this->stream(
+                            to: 'streamingAnswer',
+                            content: e($this->toolLabel($event->toolCall->name)),
+                            replace: true,
+                        );
                         $startedText = false;
+
+                        return;
                     }
 
-                    if ($event instanceof StreamStart && $startedText) {
-                        $this->stream(to: 'streamingAnswer', content: e("\n\n"), replace: false);
+                    if ($event instanceof StreamStart) {
+                        if ($hidePreamble) {
+                            $this->flushPreamble($preamble, $startedText);
+                        }
+
+                        if ($startedText) {
+                            $this->stream(to: 'streamingAnswer', content: e("\n\n"), replace: false);
+                        }
+
+                        return;
                     }
 
                     if ($event instanceof TextDelta) {
+                        $delta = $hidePreamble ? $preamble->push($event->delta) : $event->delta;
+
+                        if ($delta === null) {
+                            return;
+                        }
+
                         $this->stream(
                             to: 'streamingAnswer',
-                            content: e($event->delta),
+                            content: e($delta),
                             replace: ! $startedText,
                         );
                         $startedText = true;
+
+                        return;
+                    }
+
+                    if ($hidePreamble && $event instanceof StreamEnd) {
+                        $this->flushPreamble($preamble, $startedText);
                     }
                 },
             );
@@ -435,6 +469,22 @@ class AiChatWidget extends Component
         $name = data_get(Auth::user(), 'name');
 
         return is_string($name) ? trim($name) : '';
+    }
+
+    private function flushPreamble(PreToolTextBuffer $preamble, bool &$startedText): void
+    {
+        $held = $preamble->finishStep();
+
+        if ($held === null || $held === '') {
+            return;
+        }
+
+        $this->stream(
+            to: 'streamingAnswer',
+            content: e($held),
+            replace: ! $startedText,
+        );
+        $startedText = true;
     }
 
     protected function toolLabel(string $name): string

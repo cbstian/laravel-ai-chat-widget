@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Compactación opcional del historial reenviado al proveedor (`AI_CHAT_HISTORY`, default apagado). No reescribe `steps`. Oculta el preámbulo previo a una tool al streamear y al recargar.
 - Catálogo opcional de tools MCP de la propia app (`AI_CHAT_MCP`, default apagado). Solo tools `#[IsReadOnly]`, in-process. `laravel/mcp` queda en `suggest` / `require-dev`.
 - Dictado por voz opcional y apagado por defecto (`voice.enabled`). Drivers `browser` (Web Speech), `laravel-ai` (`Transcription`) y `xai` (`POST /v1/stt`). La API key no sale al navegador. Sin cambios si no se enciende.
 

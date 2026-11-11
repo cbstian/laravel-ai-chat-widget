@@ -62,6 +62,10 @@ class WorkbenchServiceProvider extends ServiceProvider
                 CurrentUserTool::class,
             ],
             'ai-chat.tool_labels.current-user' => 'Leyendo tu usuario…',
+            // Apagado por defecto. AI_CHAT_HISTORY=true en workbench/.env lo enciende al servir.
+            'ai-chat.history.enabled' => filter_var(env('AI_CHAT_HISTORY', false), FILTER_VALIDATE_BOOLEAN),
+            'ai-chat.history.force_language' => env('AI_CHAT_FORCE_LANGUAGE') ?: null,
+            'ai-chat.history.token_budget' => (int) env('AI_CHAT_HISTORY_TOKEN_BUDGET', 0),
         ]);
 
         foreach ([

@@ -140,4 +140,23 @@ MD,
             'timeout' => 30,
         ],
     ],
+
+    // Compacta el historial que se reenvía al proveedor. No reescribe la base.
+    // Un config publicado viejo no tiene esta clave: enabled se lee con default false.
+    'history' => [
+        'enabled' => filter_var(env('AI_CHAT_HISTORY', false), FILTER_VALIDATE_BOOLEAN),
+        // true: solo conversaciones cuyo id está en ai_chat_sessions.agent_conversation_id.
+        'only_chat_sessions' => filter_var(env('AI_CHAT_HISTORY_ONLY_CHAT_SESSIONS', true), FILTER_VALIDATE_BOOLEAN),
+        // Turnos de asistente, contados desde el final, cuyos tool results viajan enteros.
+        'keep_full_tool_results_for_turns' => (int) env('AI_CHAT_HISTORY_KEEP_FULL_TURNS', 1),
+        'compact_tool_result_chars' => (int) env('AI_CHAT_HISTORY_COMPACT_CHARS', 240),
+        // 0 = no recortar el turno reciente. Si tiene tope, el corte lleva «… [recorte]».
+        'max_tool_result_chars' => (int) env('AI_CHAT_HISTORY_MAX_TOOL_RESULT_CHARS', 0),
+        // 0 = apagado. Estimación chars/4 después de compactar.
+        'token_budget' => (int) env('AI_CHAT_HISTORY_TOKEN_BUDGET', 0),
+        // Solo aplica con enabled. Quita el texto previo a un tool call al releer y al streamear.
+        'hide_pre_tool_text' => filter_var(env('AI_CHAT_HIDE_PRE_TOOL_TEXT', true), FILTER_VALIDATE_BOOLEAN),
+        // null = no tocar las instrucciones. Si tiene valor, el driver lo añade al final.
+        'force_language' => env('AI_CHAT_FORCE_LANGUAGE') ?: null,
+    ],
 ];

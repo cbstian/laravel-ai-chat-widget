@@ -120,6 +120,10 @@ AI_CHAT_VOICE_LANGUAGE=es-CL
 
 `browser` usa Web Speech en el navegador (sin API key de la app). `laravel-ai` graba y transcribe con `Laravel\Ai\Transcription`. `xai` hace `POST https://api.x.ai/v1/stt`. La key no se renderiza. Si la voz está encendida, el micrófono se muestra; la persona no puede ocultarlo. Para probar un driver en el workbench, cámbialo en `workbench/.env` y vuelve a correr `composer serve` (ese comando es el que copia el `.env`). Guía: [docs/VOICE.md](docs/VOICE.md).
 
+### Historial compactado
+
+Apagado por defecto. Un `composer update` no cambia lo que el modelo recibe. Con `AI_CHAT_HISTORY=true` el store, al leer, sustituye tool results de turnos viejos por un stub y no reenvía el preámbulo previo a una tool. La base no se modifica. Guía: [docs/HISTORY.md](docs/HISTORY.md).
+
 ### Contrato del agente
 
 ```php
@@ -182,6 +186,7 @@ No actives el hook y además montes el componente: el chat saldría duplicado. H
 | Tools `ListMarkdownDocuments` y `ReadMarkdownDocument` | Lectura de archivos fuera de `ai-chat.documents.paths` |
 | Catálogo opcional de tools MCP de solo lectura de la propia app, apagado por defecto | Cliente MCP, HTTP, stdio o tools de escritura sin confirmación |
 | Dictado por voz opcional (`browser`, `laravel-ai`, `xai`), apagado por defecto | Enviar el audio a un provider sin que la app lo elija |
+| Compactación opcional del historial reenviado al proveedor, apagada por defecto | Reescribir `steps` o borrar tool results de la base |
 
 ## Persistencia
 

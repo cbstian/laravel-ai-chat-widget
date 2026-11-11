@@ -8,17 +8,24 @@ use Cbstian\AiChat\Contracts\ChatDriver;
 use Cbstian\AiChat\Contracts\ResolvesChatAccess;
 use Cbstian\AiChat\Contracts\ResolvesChatAgent;
 use Cbstian\AiChat\Dto\ChatTurnResult;
+use Cbstian\AiChat\History\HistorySettings;
+use Cbstian\AiChat\History\LanguageSuffixGateway;
+use Cbstian\AiChat\History\ToolResultCompactor;
 use Cbstian\AiChat\Models\AiChatSession;
 use Cbstian\AiChat\Models\AiChatToolCallLog;
 use Cbstian\AiChat\Models\AiChatTurnLog;
+use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
+use Laravel\Ai\Ai;
+use Laravel\Ai\Contracts\Gateway\StepTextGateway;
 use Laravel\Ai\Enums\MessageStatus;
 use Laravel\Ai\Messages\MessageRole;
 use Laravel\Ai\Models\ConversationMessage;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Laravel\Ai\Streaming\Events\ToolCall;
+use Laravel\Ai\Streaming\Events\ToolResult as ToolResultEvent;
 use RuntimeException;
 use Throwable;
 
@@ -97,55 +104,65 @@ class AgentChatDriver implements ChatDriver
                 $agent->forUser($user);
             }
 
-            $stream = $agent->stream(
-                $prompt,
-                provider: $provider,
-                model: filled($model) ? $model : null,
-                timeout: 120,
-            );
+            $restoreLanguage = $this->pushLanguageSuffix();
 
-            foreach ($stream as $event) {
-                if ($event instanceof ToolCall) {
-                    $toolCalls++;
-                    $this->logToolCall($session, $event);
+            try {
+                $stream = $agent->stream(
+                    $prompt,
+                    provider: $provider,
+                    model: filled($model) ? $model : null,
+                    timeout: 120,
+                );
+
+                foreach ($stream as $event) {
+                    if ($event instanceof ToolCall) {
+                        $toolCalls++;
+                        $this->logToolCall($session, $event);
+                    }
+
+                    if ($event instanceof ToolResultEvent) {
+                        $this->rememberToolPreview($session, $event);
+                    }
+
+                    if ($event instanceof TextDelta) {
+                        $text .= $event->delta;
+                    }
+
+                    $onEvent($event);
                 }
 
-                if ($event instanceof TextDelta) {
-                    $text .= $event->delta;
+                $newConversationId = $stream->conversationId ?? $conversationId;
+
+                if ($session !== null && filled($newConversationId) && blank($session->agent_conversation_id)) {
+                    $session->forceFill(['agent_conversation_id' => $newConversationId])->save();
                 }
 
-                $onEvent($event);
+                $session?->touch();
+
+                if (is_string($stream->text)) {
+                    $text = $stream->text;
+                }
+
+                $usage = $stream->usage;
+
+                $result = new ChatTurnResult(
+                    conversationId: $newConversationId,
+                    text: $text,
+                    promptTokens: $usage->inputTokens,
+                    completionTokens: $usage->outputTokens,
+                    toolCallCount: $toolCalls,
+                    durationMs: (int) round((microtime(true) - $started) * 1000),
+                    succeeded: true,
+                    provider: is_string($provider) ? $provider : null,
+                    model: filled($model) ? (string) $model : null,
+                );
+
+                $this->logTurn($session, $result, mb_strlen($prompt), mb_strlen($text));
+
+                return $result;
+            } finally {
+                $restoreLanguage();
             }
-
-            $newConversationId = $stream->conversationId ?? $conversationId;
-
-            if ($session !== null && filled($newConversationId) && blank($session->agent_conversation_id)) {
-                $session->forceFill(['agent_conversation_id' => $newConversationId])->save();
-            }
-
-            $session?->touch();
-
-            if (is_string($stream->text)) {
-                $text = $stream->text;
-            }
-
-            $usage = $stream->usage;
-
-            $result = new ChatTurnResult(
-                conversationId: $newConversationId,
-                text: $text,
-                promptTokens: $usage->inputTokens,
-                completionTokens: $usage->outputTokens,
-                toolCallCount: $toolCalls,
-                durationMs: (int) round((microtime(true) - $started) * 1000),
-                succeeded: true,
-                provider: is_string($provider) ? $provider : null,
-                model: filled($model) ? (string) $model : null,
-            );
-
-            $this->logTurn($session, $result, mb_strlen($prompt), mb_strlen($text));
-
-            return $result;
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
@@ -206,11 +223,11 @@ class AgentChatDriver implements ChatDriver
             ->limit($limit)
             ->get()
             ->reverse()
-            ->filter(fn (ConversationMessage $message): bool => filled($message->content))
             ->map(fn (ConversationMessage $message): array => [
                 'role' => (string) $message->role,
-                'content' => (string) $message->content,
+                'content' => $this->visibleContent($message),
             ])
+            ->filter(fn (array $message): bool => filled($message['content']))
             ->all());
     }
 
@@ -303,5 +320,62 @@ class AgentChatDriver implements ChatDriver
             'result_preview' => null,
             'duration_ms' => null,
         ]);
+    }
+
+    protected function rememberToolPreview(?AiChatSession $session, ToolResultEvent $event): void
+    {
+        if ($session === null || ! config('ai-chat.verbose_logs', true) || $event->preliminary) {
+            return;
+        }
+
+        $preview = mb_substr($event->toolResult->text(), 0, 200);
+
+        $log = AiChatToolCallLog::query()
+            ->where('ai_chat_session_id', $session->id)
+            ->where('tool_name', $event->toolResult->name)
+            ->whereNull('result_preview')
+            ->latest('id')
+            ->first();
+
+        $log?->forceFill(['result_preview' => $preview])->save();
+    }
+
+    protected function visibleContent(ConversationMessage $message): string
+    {
+        if ((string) $message->role !== MessageRole::Assistant->value) {
+            return (string) $message->content;
+        }
+
+        return app(HistorySettings::class)->hidePreToolText()
+            ? app(ToolResultCompactor::class)->visibleAssistantText($message->content, $message->steps)
+            : (string) $message->content;
+    }
+
+    /**
+     * @return Closure(): void
+     */
+    private function pushLanguageSuffix(): Closure
+    {
+        $settings = app(HistorySettings::class);
+        $language = $settings->forceLanguage();
+
+        if ($language === null) {
+            return static function (): void {};
+        }
+
+        $name = config('ai-chat.provider');
+        $provider = Ai::textProvider(is_string($name) && $name !== '' ? $name : null);
+
+        if (! method_exists($provider, 'textGateway')) {
+            return static function (): void {};
+        }
+
+        /** @var StepTextGateway $previous */
+        $previous = $provider->textGateway();
+        $provider->useTextGateway(new LanguageSuffixGateway($previous, $language, $settings));
+
+        return function () use ($provider, $previous): void {
+            $provider->useTextGateway($previous);
+        };
     }
 }
