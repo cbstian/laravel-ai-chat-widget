@@ -45,6 +45,10 @@
             @endif
             Si cambiaste <code>workbench/.env</code> y esto no coincide, vuelve a correr <code>composer serve</code>.
         </p>
+        <p>Historial compactado: <strong>{{ config('ai-chat.history.enabled') ? 'sí' : 'no' }}</strong>.
+            Se prende con <code>AI_CHAT_HISTORY=true</code> en <code>workbench/.env</code> y otro <code>composer serve</code>.
+            El agente de esta demo no llama tools de verdad; la compactación se ve en una app con tools.
+        </p>
     </main>
 
     @livewire('ai-chat-widget')

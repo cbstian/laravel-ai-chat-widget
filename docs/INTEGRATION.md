@@ -12,6 +12,7 @@ Lee estos archivos del paquete instalado (`vendor/cbstian/laravel-ai-chat-widget
 | `docs/INTEGRATION.md` | Este flujo |
 | `docs/MCP.md` | Tools MCP de la propia app, solo lectura, in-process |
 | `docs/VOICE.md` | Dictado por voz: drivers, upgrade, límites y privacidad |
+| `docs/HISTORY.md` | Historial compactado al releer hacia el proveedor |
 | `config/ai-chat.php` | Todas las claves, con el efecto de cada una |
 | `resources/stubs/welcome.md` | Mensaje inicial que publica `ai-chat:install` |
 | `resources/stubs/agent/ChatAgent.php.stub` | Agente que ya conecta las tools de Markdown |
@@ -31,7 +32,7 @@ Con Laravel Boost, `php artisan boost:install` incorpora la guideline del paquet
 | Comando | `php artisan ai-chat:install` |
 | Componente Livewire | `ai-chat-widget` |
 | Directiva de estilos | `@aiChatStyles` |
-| Contratos | `ResolvesChatAgent`, `ResolvesChatAccess`, `ChatDriver`. `McpToolCatalog` y `SpeechToTextDriver` son opcionales y no añaden métodos a `ChatDriver` |
+| Contratos | `ResolvesChatAgent`, `ResolvesChatAccess`, `ChatDriver`. `McpToolCatalog`, `SpeechToTextDriver` y el store compactador son opcionales y no añaden métodos a `ChatDriver` |
 
 No está en Packagist todavía. Hasta entonces, el `composer.json` de la app necesita el repositorio VCS o un `path`.
 
@@ -144,7 +145,7 @@ Cada clave está comentada en `config/ai-chat.php`. Resumen operativo:
 | `documents.max_bytes` | `AI_CHAT_DOCUMENTS_MAX_BYTES` | Tope al leer un archivo |
 | `documents.max_files` | `AI_CHAT_DOCUMENTS_MAX_FILES` | Tope del listado |
 
-`mergeConfigFrom` no fusiona arrays anidados. Si publicas `config/ai-chat.php`, edita ese archivo: una clave `documents` en un service provider reemplaza el array entero. Un config publicado viejo no trae `mcp` ni `voice`: `config('ai-chat.mcp.enabled', false)` deja el catálogo vacío, y el widget lee `voice.enabled` con default `false`, así que el micrófono no aparece hasta que copies el bloque y lo enciendas.
+`mergeConfigFrom` no fusiona arrays anidados. Si publicas `config/ai-chat.php`, edita ese archivo: una clave `documents` en un service provider reemplaza el array entero. Un config publicado viejo no trae `mcp`, `voice` ni `history`: `config('ai-chat.mcp.enabled', false)` deja el catálogo vacío, el widget lee `voice.enabled` con default `false`, y sin `history` el proveedor sigue recibiendo el tool result entero.
 
 ## Tools MCP de la propia app
 
@@ -153,6 +154,12 @@ Opcional y apagado por defecto (`AI_CHAT_MCP`). Solo tools `#[IsReadOnly]` de es
 ## Dictado por voz
 
 Opcional y apagado por defecto (`AI_CHAT_VOICE`). Drivers `browser`, `laravel-ai` y `xai`. No hay migración. Si está encendido, el micrófono se muestra; la persona no puede ocultarlo. Alta, el bloque `voice` en un config ya publicado, vistas, variables, privacidad y el checklist están en [VOICE.md](VOICE.md).
+
+## Historial compactado
+
+Opcional y apagado por defecto (`AI_CHAT_HISTORY`). Al leer hacia el proveedor, los tool results de turnos viejos pasan a un stub. `steps` y `content` en la base no cambian. El preámbulo anterior a una tool no se reenvía ni se muestra en las burbujas.
+
+Si el config ya está publicado, copia el bloque `history` de `config/ai-chat.php` del paquete. `mergeConfigFrom` no lo agrega solo, y el env no alcanza sin esa clave. Claves, la heurística de 160 caracteres, el presupuesto estimado y cómo probar `dev-cursor/history-compaction` están en [HISTORY.md](HISTORY.md).
 
 ## Agente y tools del LLM
 

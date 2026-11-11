@@ -9,6 +9,9 @@ use Cbstian\AiChat\Contracts\ChatDriver;
 use Cbstian\AiChat\Contracts\ResolvesChatAccess;
 use Cbstian\AiChat\Contracts\ResolvesChatAgent;
 use Cbstian\AiChat\Drivers\AgentChatDriver;
+use Cbstian\AiChat\History\CompactingConversationStore;
+use Cbstian\AiChat\History\HistorySettings;
+use Cbstian\AiChat\History\ToolResultCompactor;
 use Cbstian\AiChat\Livewire\AiChatWidget;
 use Cbstian\AiChat\Mcp\McpToolCatalog;
 use Cbstian\AiChat\Speech\FilamentPanelId;
@@ -19,6 +22,7 @@ use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Ai\Contracts\ConversationStore;
 use Livewire\Livewire;
 use RuntimeException;
 
@@ -95,10 +99,18 @@ class AiChatServiceProvider extends ServiceProvider
 
         $this->app->singleton(FilamentPanelId::class);
         $this->app->singleton(VoiceSettings::class);
+        $this->app->singleton(HistorySettings::class);
+        $this->app->singleton(ToolResultCompactor::class);
     }
 
     public function boot(): void
     {
+        // El workbench (y la app) pueden prender history en su boot. El callback
+        // corre cuando todos los providers ya terminaron.
+        $this->app->booted(function (): void {
+            $this->registerCompactingStore();
+        });
+
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'ai-chat');
 
         if (class_exists(Livewire::class)) {
@@ -136,6 +148,32 @@ class AiChatServiceProvider extends ServiceProvider
         }
 
         $this->registerFilamentHook();
+    }
+
+    /**
+     * Envuelve el store solo si history.enabled es true en este momento.
+     * Si luego se apaga, el decorador deja pasar el historial entero.
+     */
+    public function registerCompactingStore(): void
+    {
+        if (! $this->app->bound(ConversationStore::class)) {
+            return;
+        }
+
+        if (! $this->app->make(HistorySettings::class)->enabled()) {
+            return;
+        }
+
+        $this->app->extend(ConversationStore::class, function (ConversationStore $store, Application $app): ConversationStore {
+            if ($store instanceof CompactingConversationStore) {
+                return $store;
+            }
+
+            return new CompactingConversationStore(
+                $store,
+                $app->make(ToolResultCompactor::class),
+            );
+        });
     }
 
     protected function registerFilamentHook(): void
