@@ -21,7 +21,7 @@ class SpeechToTextManager extends Manager
         return trim($driver);
     }
 
-    public function driver($driver = null): SpeechToTextDriver
+    public function driver(mixed $driver = null): SpeechToTextDriver
     {
         $resolved = parent::driver($driver);
 
