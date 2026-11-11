@@ -36,8 +36,8 @@ final class XaiSpeechToTextDriver implements SpeechToTextDriver
             $response = Http::withToken($key)
                 ->timeout($this->timeout())
                 ->acceptJson()
-                ->asMultipart()
-                ->post($this->endpoint(), $this->parts($audio, $contents));
+                ->attach($this->parts($audio, $contents))
+                ->post($this->endpoint());
         } catch (ConnectionException) {
             throw new VoiceTranscriptionException('No se pudo transcribir.');
         } catch (Throwable) {
