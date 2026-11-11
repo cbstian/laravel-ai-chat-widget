@@ -122,7 +122,13 @@ AI_CHAT_VOICE_LANGUAGE=es-CL
 
 ### Historial compactado
 
-Apagado por defecto. Un `composer update` no cambia lo que el modelo recibe. Con `AI_CHAT_HISTORY=true` el store, al leer, sustituye tool results de turnos viejos por un stub y no reenvía el preámbulo previo a una tool. La base no se modifica. Guía: [docs/HISTORY.md](docs/HISTORY.md).
+Apagado por defecto. Un `composer update` no cambia lo que el modelo recibe. Quien publicó `config/ai-chat.php` tiene que copiar el bloque `history`: sin esa clave, `AI_CHAT_HISTORY` en `.env` no hace nada.
+
+```env
+AI_CHAT_HISTORY=true
+```
+
+Con eso, al leer hacia el proveedor, los tool results de turnos viejos pasan a un stub y el preámbulo previo a una tool no se reenvía ni se pinta. `steps` y `content` en la base no cambian. Guía: [docs/HISTORY.md](docs/HISTORY.md).
 
 ### Contrato del agente
 

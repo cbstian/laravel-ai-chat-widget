@@ -8,6 +8,8 @@
 - Dictado por voz opcional y apagado por defecto (`voice.enabled`). Drivers `browser` (Web Speech), `laravel-ai` (`Transcription`) y `xai` (`POST /v1/stt`). La API key no sale al navegador. Sin cambios si no se enciende.
 
 ### Fixed
+- `SpeechToTextManager::driver()` tipa el argumento. En Laravel 13 `prefer-lowest` la cobertura de tipos se quedaba bajo 100 %.
+- El POST de xAI arma el multipart con `attach()`. En Laravel 12 `prefer-lowest`, PHPStan no aceptaba esa lista como cuerpo de `post()`.
 - `composer serve` vuelve a copiar `workbench/.env` al arrancar. Si no, Testbench seguía con el `.env` viejo del skeleton y el driver se quedaba en `browser`.
 
 ### Changed

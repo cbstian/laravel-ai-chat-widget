@@ -157,7 +157,9 @@ Opcional y apagado por defecto (`AI_CHAT_VOICE`). Drivers `browser`, `laravel-ai
 
 ## Historial compactado
 
-Opcional y apagado por defecto (`AI_CHAT_HISTORY`). Al leer hacia el proveedor, los tool results de turnos viejos pasan a un stub. `steps` y `content` en la base no cambian. El preámbulo anterior a una tool no se reenvía ni se muestra en las burbujas. Claves, presupuesto de tokens y el workbench están en [HISTORY.md](HISTORY.md).
+Opcional y apagado por defecto (`AI_CHAT_HISTORY`). Al leer hacia el proveedor, los tool results de turnos viejos pasan a un stub. `steps` y `content` en la base no cambian. El preámbulo anterior a una tool no se reenvía ni se muestra en las burbujas.
+
+Si el config ya está publicado, copia el bloque `history` de `config/ai-chat.php` del paquete. `mergeConfigFrom` no lo agrega solo, y el env no alcanza sin esa clave. Claves, la heurística de 160 caracteres, el presupuesto estimado y cómo probar `dev-cursor/history-compaction` están en [HISTORY.md](HISTORY.md).
 
 ## Agente y tools del LLM
 

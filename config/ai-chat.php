@@ -155,6 +155,7 @@ MD,
         // 0 = apagado. Estimación chars/4 después de compactar.
         'token_budget' => (int) env('AI_CHAT_HISTORY_TOKEN_BUDGET', 0),
         // Solo aplica con enabled. Quita el texto previo a un tool call al releer y al streamear.
+        // En pantalla el buffer se suelta a los 160 caracteres, en un párrafo, o al acabar el step.
         'hide_pre_tool_text' => filter_var(env('AI_CHAT_HIDE_PRE_TOOL_TEXT', true), FILTER_VALIDATE_BOOLEAN),
         // null = no tocar las instrucciones. Si tiene valor, el driver lo añade al final.
         'force_language' => env('AI_CHAT_FORCE_LANGUAGE') ?: null,
