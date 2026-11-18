@@ -89,17 +89,22 @@ it('renders the browser microphone without upload urls or secrets', function () 
         ->set('open', true)
         ->assertSee('pc-ai-chat__mic', false)
         ->assertSee('es-CL', false)
-        ->assertSee('SpeechRecognition', false)
+        ->assertSee('x-data="pcAiChatVoice(', false)
+        ->assertDontSee('<script', false)
         ->assertDontSee('api.x.ai', false)
         ->assertDontSee('sk-browser-must-not-leak', false)
         ->assertDontSee('grok-voice-transcribe-2.0', false)
         ->assertDontSee('laravel-ai', false)
         ->assertDontSee('Ocultar dictado', false)
-        ->assertDontSee("localStorage.setItem('pc-ai-chat-voice'", false)
-        ->assertSee("localStorage.removeItem('pc-ai-chat-voice')", false)
         ->assertSee('aria-live="polite"', false)
         ->assertSee('pc-ai-chat__sr', false)
         ->assertDontSee('x-text="label()"></span></button>', false);
+
+    $js = file_get_contents(dirname(__DIR__, 2).'/resources/js/voice.js');
+
+    expect($js)->toContain('SpeechRecognition')
+        ->toContain("localStorage.removeItem('pc-ai-chat-voice')")
+        ->not->toContain("localStorage.setItem('pc-ai-chat-voice'");
 
     $css = file_get_contents(dirname(__DIR__, 2).'/resources/css/ai-chat.css');
 
@@ -131,8 +136,7 @@ it('tells the browser to upload audio when the driver is xai', function () {
         ->not->toContain('\u0022mode\u0022:\u0022browser\u0022')
         ->not->toContain('sk-not-rendered')
         ->not->toContain('Ocultar dictado')
-        ->not->toContain("localStorage.setItem('pc-ai-chat-voice'")
-        ->toContain("localStorage.removeItem('pc-ai-chat-voice')");
+        ->not->toContain('<script');
 });
 
 it('hides the microphone when the page forces voice off', function () {

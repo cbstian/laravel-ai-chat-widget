@@ -12,15 +12,18 @@ use Cbstian\AiChat\Drivers\AgentChatDriver;
 use Cbstian\AiChat\History\CompactingConversationStore;
 use Cbstian\AiChat\History\HistorySettings;
 use Cbstian\AiChat\History\ToolResultCompactor;
+use Cbstian\AiChat\Http\Controllers\VoiceScriptController;
 use Cbstian\AiChat\Livewire\AiChatWidget;
 use Cbstian\AiChat\Mcp\McpToolCatalog;
 use Cbstian\AiChat\Speech\FilamentPanelId;
 use Cbstian\AiChat\Speech\SpeechToTextManager;
 use Cbstian\AiChat\Speech\VoiceSettings;
+use Cbstian\AiChat\Support\Assets;
 use Filament\Facades\Filament;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Ai\Contracts\ConversationStore;
 use Livewire\Livewire;
@@ -118,10 +121,10 @@ class AiChatServiceProvider extends ServiceProvider
         }
 
         Blade::directive('aiChatStyles', function () {
-            $path = addslashes(__DIR__.'/../resources/css/ai-chat.css');
-
-            return "<?php echo '<style>'.(is_file('{$path}') ? file_get_contents('{$path}') : '').'</style>'; ?>";
+            return '<?php echo \\'.Assets::class.'::styles(); ?>';
         });
+
+        $this->registerRoutes();
 
         if ($this->app->runningInConsole()) {
             $this->commands([InstallCommand::class]);
@@ -174,6 +177,20 @@ class AiChatServiceProvider extends ServiceProvider
                 $app->make(ToolResultCompactor::class),
             );
         });
+    }
+
+    /**
+     * JS del dictado como archivo externo. Sin middleware web: no abre sesión ni
+     * cookies. Si la app ya tiene la ruta (route:cache), no se registra de nuevo.
+     */
+    protected function registerRoutes(): void
+    {
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
+        Route::get('ai-chat/assets/voice.js', VoiceScriptController::class)
+            ->name('ai-chat.voice-script');
     }
 
     protected function registerFilamentHook(): void
