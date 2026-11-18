@@ -181,6 +181,16 @@ class ChatAccessGate implements ResolvesChatAccess
 
 No actives el hook y además montes el componente: el chat saldría duplicado. Hace falta un usuario autenticado con id numérico; los invitados no ven el panel.
 
+### Content-Security-Policy (CSP)
+
+El paquete no tiene JavaScript inline propio. El dictado por voz (`pcAiChatVoice`) es un archivo externo que sirve el paquete en `/ai-chat/assets/voice.js?id=<hash>` (ruta `ai-chat.voice-script`). La vista lo pide con `@assets` de Livewire: queda en el `<head>`, se carga una vez por página, antes de que Alpine inicie, y Livewire lo espera también al navegar con `wire:navigate`. No hay que agregar directivas nuevas ni publicar vistas.
+
+- `script-src 'self'` alcanza para el dictado. Con `'strict-dynamic'`, el `<script src>` lleva el nonce de `Vite::useCspNonce()` si la app lo define.
+- `@aiChatStyles` imprime un `<style>` inline. Lleva el mismo nonce cuando existe; si tu `style-src` no tiene nonce, necesita `'unsafe-inline'`. El contenedor del widget usa además un atributo `style` con los colores, que una CSP sin `'unsafe-inline'` en `style-src` bloquea.
+- Las expresiones Alpine del widget (`x-data`, `x-on`…) siguen la build normal de Livewire, que necesita `'unsafe-eval'`, igual que cualquier otro componente de la app.
+- La URL lleva el hash del archivo: se cachea un año y cambia sola cuando el paquete actualiza el JS. Si Nginx tiene un `location` propio para `.js`, tiene que dejar pasar a Laravel los archivos que no existen en `public/`.
+- Si publicaste las vistas antes de esta versión, tu `voice-script.blade.php` publicado sigue con el script inline. Bórralo (o vuelve a publicar con `--force`) para usar el archivo externo.
+
 ## Qué hace / qué no hace
 
 | Incluye | No incluye |

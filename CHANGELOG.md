@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Soporte para Content-Security-Policy estricta. El JS del dictado ya no es un `<script>` inline: se sirve como archivo externo (`GET /ai-chat/assets/voice.js?id=<hash>`, ruta `ai-chat.voice-script`, sin middleware ni sesión) y la vista lo carga con `@assets` de Livewire, una vez por página y en el `<head>`. Funciona con `script-src 'self'` sin nonce y sin publicar vistas, también al navegar con `wire:navigate`.
+- `@aiChatStyles` y el `<script src>` del dictado llevan `nonce` cuando la app usa `Vite::useCspNonce()`.
 - Compactación opcional del historial reenviado al proveedor (`AI_CHAT_HISTORY`, default apagado). No reescribe `steps`. Oculta el preámbulo previo a una tool al streamear y al recargar.
 - Catálogo opcional de tools MCP de la propia app (`AI_CHAT_MCP`, default apagado). Solo tools `#[IsReadOnly]`, in-process. `laravel/mcp` queda en `suggest` / `require-dev`.
 - Dictado por voz opcional y apagado por defecto (`voice.enabled`). Drivers `browser` (Web Speech), `laravel-ai` (`Transcription`) y `xai` (`POST /v1/stt`). La API key no sale al navegador. Sin cambios si no se enciende.

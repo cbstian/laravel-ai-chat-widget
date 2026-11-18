@@ -37,7 +37,7 @@ Con `AI_CHAT_VOICE=true` aparece un botón de micrófono en el formulario del wi
 
 1. Instala el widget como en [INTEGRATION.md](INTEGRATION.md). No hace falta otro comando para el dictado: el botón y el CSS entran con el componente y con `@aiChatStyles`.
 2. Deja `AI_CHAT_VOICE` sin definir, o en `false`, hasta que quieras el micrófono.
-3. No publiques las vistas si no necesitas cambiar el HTML. `@aiChatStyles` lee el CSS del paquete; no hay build de Vite ni `npm`.
+3. No publiques las vistas si no necesitas cambiar el HTML. `@aiChatStyles` lee el CSS del paquete; no hay build de Vite ni `npm`. El JS del dictado lo sirve el paquete en `/ai-chat/assets/voice.js` y el widget lo carga solo (ver «CSP» más abajo).
 
 ```env
 AI_CHAT_VOICE=false
@@ -87,11 +87,20 @@ AI_CHAT_VOICE_LANGUAGE=es-CL
 
 No pegues la API key dentro de ese PHP si el archivo se commitea. `env('XAI_API_KEY')` y el `.env` alcanzan.
 
-4. Vistas publicadas. Si alguna vez corriste `php artisan vendor:publish --tag=ai-chat-views`, Laravel usa `resources/views/vendor/ai-chat/` y **no** el Blade nuevo del paquete. Ahí tienen que estar `livewire/widget.blade.php` y `livewire/voice-script.blade.php`. Puedes volver a publicar con `--force` (pisa tus cambios) o copiar esos dos archivos del paquete y reaplicar lo que hubieras editado. Si no publicaste vistas, no hagas nada.
+4. Vistas publicadas. Si alguna vez corriste `php artisan vendor:publish --tag=ai-chat-views`, Laravel usa `resources/views/vendor/ai-chat/` y **no** el Blade nuevo del paquete. Ahí tienen que estar `livewire/widget.blade.php` y `livewire/voice-script.blade.php`. Puedes volver a publicar con `--force` (pisa tus cambios) o copiar esos dos archivos del paquete y reaplicar lo que hubieras editado. Si no publicaste vistas, no hagas nada. Desde la versión con soporte de CSP, `voice-script.blade.php` ya no trae el JS inline: si tienes una copia publicada vieja sigue funcionando, pero inline. Si no la modificaste, bórrala para usar el archivo externo.
 5. CSS. `@aiChatStyles` incrusta `resources/css/ai-chat.css` del paquete en cada request. No hay que recompilar assets. Si copiaste el CSS a mano en un layout, súmale las reglas `.pc-ai-chat__mic`. Publicar `ai-chat-assets` copia el CSS a `public/vendor/ai-chat`, pero el widget no lo enlaza: sigue valiendo la directiva.
 6. `php artisan config:clear` si la config está cacheada.
 
-La subida de `laravel-ai` y `xai` es la acción Livewire `transcribe` del mismo componente, con el mismo usuario que `ask()`. No se añade una route del paquete, para no chocar con el guard de Filament.
+La subida de `laravel-ai` y `xai` es la acción Livewire `transcribe` del mismo componente, con el mismo usuario que `ask()`. No se añade una route de subida, para no chocar con el guard de Filament. La única ruta del paquete es `GET /ai-chat/assets/voice.js`: un archivo estático, sin middleware, sin sesión y sin datos del usuario.
+
+## CSP
+
+El componente Alpine `pcAiChatVoice` vive en `resources/js/voice.js`. `voice-script.blade.php` solo emite, dentro de `@assets`, un `<script src="…/ai-chat/assets/voice.js?id=<hash>">`. Livewire lo inyecta en el `<head>` en la carga completa, lo agrega y espera en un update o en `wire:navigate` si la página no lo tenía, y no lo repite si ya está. Por eso está definido antes de que Alpine evalúe `x-data="pcAiChatVoice(…)"`.
+
+- No hay script inline: con `script-src 'self'` no hace falta nonce ni `'unsafe-inline'`, ni publicar vistas para añadirlo.
+- Si la app usa `Vite::useCspNonce()`, el tag lleva ese nonce (sirve con `'strict-dynamic'`).
+- La respuesta es `application/javascript`, con `Cache-Control: public, max-age=31536000, immutable` cuando el `id` coincide con el hash actual, y cinco minutos si no.
+- `connect-src 'self'` alcanza para los drivers de servidor: el audio sube por Livewire al mismo origen.
 
 Livewire guarda el audio en su disco temporal (por defecto local, `livewire-tmp`) y el paquete lo borra al terminar, también si la transcripción falla. El disco temporal tiene que ser local: el driver lee un path en disco. El tope de Livewire por defecto (12 MB) es mayor que el del paquete (2 MB). Si en `config/livewire.php` restringiste `temporary_file_upload.rules` a imágenes, el audio no entra: deja `file` y un `max` de al menos 2048 KB.
 
@@ -240,6 +249,8 @@ En el workbench del paquete, edita `workbench/.env` y arranca con `composer serv
 | `config('ai-chat.voice.enabled')` sigue false | `php artisan config:clear` |
 | El flag está en true y el driver es un nombre raro | El aviso dice que el driver configurado no está disponible. No se disfraza de Web Speech |
 | El HTML no tiene botón y publicaste las vistas | Falta el Blade nuevo en `resources/views/vendor/ai-chat/livewire/` |
+| La consola dice que `pcAiChatVoice` no está definido | `/ai-chat/assets/voice.js` no responde 200: revisa que Nginx pase a Laravel los `.js` que no existen en `public/`, o `php artisan route:clear` si la ruta quedó fuera de una caché vieja |
+| La CSP bloquea un script inline del dictado | Hay un `voice-script.blade.php` publicado viejo. Bórralo de `resources/views/vendor/ai-chat/livewire/` |
 | El botón no se ve en Firefox con `browser` | Firefox de escritorio no tiene Web Speech. Usa `laravel-ai` o `xai` |
 | El botón no se ve en un Safari viejo con driver de servidor | Sin `MediaRecorder` el botón se oculta en el cliente |
 | El navegador no pide permiso, o `getUserMedia` falla | La página no es HTTPS ni `localhost` |

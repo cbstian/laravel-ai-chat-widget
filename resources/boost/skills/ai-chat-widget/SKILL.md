@@ -67,6 +67,7 @@ Documentos que el LLM puede leer: archivos `.md` en `resources/ai/chat` (ahí qu
 - El factory recibe `($user, $context)`. El contexto entra por `@livewire('ai-chat-widget', ['context' => [...]])`.
 - Blade: `@aiChatStyles` y `@livewire('ai-chat-widget')` una vez por layout.
 - Filament: `AI_CHAT_FILAMENT_HOOK=true` **o** el montaje manual, no los dos.
+- CSP: el paquete no tiene JS inline. El dictado se sirve en `/ai-chat/assets/voice.js` y el widget lo carga con `@assets`. Con `script-src 'self'` no publiques vistas para añadir un nonce.
 
 ## Comprobaciones
 

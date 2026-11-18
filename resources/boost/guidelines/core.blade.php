@@ -48,6 +48,7 @@ El agente generado ya registra `Cbstian\AiChat\Tools\ListMarkdownDocuments` y `R
 - Hace falta un usuario autenticado con id numérico. Los invitados no entran.
 - `AI_CHAT_PERSIST=false` solo apaga las tablas `ai_chat_*`. El historial del chat sigue en las tablas de laravel/ai.
 - El agente debe usar `RemembersConversations` y exponer `stream()`.
+- CSP: el JS del dictado es externo (`/ai-chat/assets/voice.js`, cargado con `@assets`). Con `script-src 'self'` no hace falta nonce ni publicar vistas.
 - `fab_icon` y `fab_icon_svg` no cambian la UI.
 - `AI_CHAT_MCP` está apagado por defecto. No lo enciendas al instalar. Solo tools `#[IsReadOnly]` de la propia app, in-process, vía `McpToolCatalog`. No añadas un cliente HTTP o stdio. Las tools de escritura se omiten. Un `config/ai-chat.php` ya publicado no gana la clave `mcp`: el default en código sigue apagado.
 - El dictado (`AI_CHAT_VOICE`) está apagado por defecto. No lo enciendas al instalar. `browser` no gasta API; `laravel-ai` necesita `AI_CHAT_VOICE_PROVIDER` con STT; `xai` usa `XAI_API_KEY` solo en el servidor. No añadas métodos a `ChatDriver`. Un `config/ai-chat.php` ya publicado no gana claves nuevas: sin el bloque `voice`, sigue apagado. Si la voz está encendida, el usuario no puede ocultar el micrófono. Para una pantalla, `['voice' => false]`.

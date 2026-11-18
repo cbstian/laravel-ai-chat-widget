@@ -253,6 +253,7 @@ Con `AI_CHAT_PERSIST=false` el driver no crea sesiones ni consulta `ai_chat_sess
 - Activar el hook de Filament y además poner `@livewire('ai-chat-widget')` duplica el widget.
 - Los logs verbosos dependen de `persist`.
 - Una tool de dominio que devuelva HTML acaba escapada en la burbuja, porque la respuesta del modelo se renderiza como Markdown seguro.
+- CSP: el paquete no tiene JS inline. El dictado se carga desde `/ai-chat/assets/voice.js` con `@assets` (ruta `ai-chat.voice-script`). `script-src 'self'` alcanza; no publiques vistas solo para añadir un nonce. `@aiChatStyles` es un `<style>` inline que lleva el nonce de `Vite::useCspNonce()` si existe.
 
 ## Verificación en la app
 
